@@ -1,4 +1,10 @@
 # icureus_carbon_calculator
+
+### Details:
+
+The most up-to-date emission factors can be found in 
+
+
 This repository will host the code for the carbon calculator. 
 
 There are two pieces of code, 

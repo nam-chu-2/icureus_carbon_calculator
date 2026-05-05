@@ -1,3 +1,5 @@
+// Copied code from code test
+
 Qualtrics.SurveyEngine.addOnReady(function () {
   console.log(" =-= GHG Chart script started =-=");
 
@@ -46,7 +48,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * -----------------------------------------
    */
   let G_ChartObj;
-  let G_GlobalAverage = 6.5;
+  let G_GlobalAverage = 3.8;
   let G_SustainableTarget = 2.5;
   let G_SurveySettings = {
     flight: {
