@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LEARNING-PLAN.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="learning-plan-reproducing-june-10-2026all-graphsjs">Learning Plan: Reproducing <code>June 10 2026/all-graphs.js</code></h1>
+<p><strong>Goal:</strong> Rebuild the carbon-calculator chart script from scratch in <code>reproduction/reproducing-code.js</code>, understanding every component well enough to explain it — line by line if needed — to your supervisor or a journal reviewer.</p>
+<p><strong>Method:</strong> For each phase, (1) read the relevant section of the original, (2) close the file and rewrite that section yourself from understanding, (3) compare against the original, (4) pass the &quot;explain it&quot; checkpoint by writing 2–3 sentences in your own words (keep these notes — they become your answers to reviewer questions).</p>
+<hr>
+<h2 id="phase-0--orientation-what-is-this-file-1-hour">Phase 0 — Orientation: what is this file? (~1 hour)</h2>
+<p>The script runs inside a <strong>Qualtrics survey page</strong>. When the page loads, it:</p>
+<ol>
+<li>Reads the respondent's earlier survey answers (via Qualtrics &quot;piped text&quot;),</li>
+<li>Converts them into four emission estimates (flight, home heating, vehicle, diet),</li>
+<li>Draws a stacked bar chart (Chart.js) comparing the respondent's footprint to a global average and a 2030 target,</li>
+<li>Wires up radio buttons that let the respondent explore &quot;what if I changed X?&quot; scenarios, updating the chart live.</li>
+</ol>
+<p><strong>Tasks:</strong></p>
+<ul>
+<li>Skim the whole file top to bottom once. Note the section banners (<code>Survey answers</code>, <code>Init Global Variables</code>, <code>Parser Functions</code>, <code>Weights</code>, <code>Calculation Functions</code>, <code>Populate Survey Results</code>, <code>Chart</code>, <code>JQuery Set Radio Button</code>, <code>JQuery Event Listeners</code>). The file is a pipeline: <strong>raw strings → parsed settings → weighted math → chart → interactivity</strong>.</li>
+<li>Diff against <code>archived_code/all-graphs.js</code> (<code>diff &quot;archived_code/all-graphs.js&quot; &quot;June 10 2026/all-graphs.js&quot;</code>). The only changes: Montana → Colorado as a study state, and <code>G_GlobalAverage</code> 6.5 → 3.8. Knowing what changed between versions tells you what the team considered tunable.</li>
+</ul>
+<p><strong>Checkpoint:</strong> Explain the pipeline in one paragraph without looking at the code.</p>
+<hr>
+<h2 id="phase-1--qualtrics-input-layer-lines-1%E2%80%9393-2-hours">Phase 1 — Qualtrics input layer (lines 1–93) (~2 hours)</h2>
+<p><strong>Concepts to learn:</strong></p>
+<ul>
+<li><code>Qualtrics.SurveyEngine.addOnReady(fn)</code> — Qualtrics' page-load hook; everything lives inside this closure.</li>
+<li><strong>Piped text</strong>: strings like <code>&quot;${q://QID123/SelectedChoicesRecode}&quot;</code> are replaced <em>by the Qualtrics server</em> with the respondent's answer <strong>before</strong> the JavaScript ever runs in the browser. By the time this script executes, <code>qData.q1</code> is already a plain string like <code>&quot;1&quot;</code> or <code>&quot;1, 2&quot;</code>. This is why the file can't run locally as-is — there's no Qualtrics server to substitute the values.</li>
+<li>The three piped-text forms used: <code>SelectedChoicesRecode</code> (recode of chosen option(s)), <code>ChoiceTextEntryValue</code> (free-text), <code>ChoiceNumericEntryValue/1</code> (numeric entry).</li>
+<li>Why there are nine &quot;short-haul flights&quot; questions (q8, q21–q27): Qualtrics shows a <em>different</em> question per province/state (the question text names the region), so the script must pick the right QID based on region.</li>
+<li>The <code>G_</code> globals: chart handle, benchmarks (<code>G_GlobalAverage = 3.8</code>, <code>G_SustainableTarget = 2.5</code> — be ready to cite where these numbers come from for the paper), the <code>G_SurveySettings</code> object that everything funnels into, and region/unit state (<code>G_CountryName</code>, <code>G_GetProvince</code>, <code>G_MileageType</code>).</li>
+</ul>
+<p><strong>Tasks:</strong></p>
+<ul>
+<li>Make a table mapping each <code>qN</code> → QID → survey question → which parser consumes it → which calculation uses it. (This table is gold for a methods section.)</li>
+<li>Reproduce: write the <code>qData</code> object and globals in <code>reproducing-code.js</code>. For local testing, replace piped text with a hard-coded mock object (see Phase 6).</li>
+</ul>
+<p><strong>Checkpoint:</strong> Explain why the answers arrive as strings, and why short-haul flights need region-specific QIDs.</p>
+<hr>
+<h2 id="phase-2--parser-functions-lines-100%E2%80%93221-2-hours">Phase 2 — Parser functions (lines 100–221) (~2 hours)</h2>
+<p><strong>Concepts to learn:</strong></p>
+<ul>
+<li><code>parseIntOrZero</code> — defensive parsing; blank/garbage → 0.</li>
+<li><code>extractSelectedChoices</code> — the workhorse. Walks a string like <code>&quot;1, 3&quot;</code> by reading <code>charAt(0)</code> and chopping 3 chars (<code>&quot;N, &quot;</code>). Understand its limits: <strong>only single-digit recodes</strong>, assumes <code>&quot;, &quot;</code> separators, returns <code>0</code> for blank.</li>
+<li>The lookup-table pattern: every categorical parser (<code>getBuildingStandard</code>, <code>getHeatingType</code>, <code>getFuelType</code>, <code>getCarSize</code>, <code>getDiet</code>, <code>getCanadaProvince</code>, <code>getUSAProvince</code>, <code>getHouseHoldSize</code>) uses a <strong>1-based array</strong> with a dummy <code>&quot;&quot;</code> (or duplicate) at index 0, so recode <code>1</code> maps to element 1. Blank answer → index 0 → the fallback value.</li>
+<li>Floor-at-1 guards: <code>getHouseSize</code> and <code>getCarPassenger</code> clamp to minimum 1 (avoids divide-by-zero later — household size and passengers are divisors).</li>
+</ul>
+<p><strong>Tasks:</strong></p>
+<ul>
+<li>Trace <code>extractSelectedChoices(&quot;2, 4&quot;)</code> by hand on paper.</li>
+<li>Reproduce all parsers from memory; unit-test them in Node (<code>node -e ...</code> or a small test file) with inputs <code>&quot;&quot;</code>, <code>&quot;1&quot;</code>, <code>&quot;3&quot;</code>, <code>&quot;1, 2&quot;</code>.</li>
+</ul>
+<p><strong>Checkpoint:</strong> Explain the 1-based array trick and what happens to an unanswered question at every parser.</p>
+<hr>
+<h2 id="phase-3--emission-weights-the-science-core-lines-230%E2%80%93413-3-hours-the-most-important-phase-for-a-journal">Phase 3 — Emission weights: the science core (lines 230–413) (~3 hours, the most important phase for a journal)</h2>
+<p>This is the section a reviewer will probe hardest. For <strong>every constant, find and document its source</strong> (ask your supervisor / check the project's references — the code doesn't cite them).</p>
+<p><strong>Weight tables and their units:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Unit</th>
+<th>Structure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flightTypeWeights</code></td>
+<td>t CO₂e <strong>per flight</strong> (short 0.18, medium 0.75, long 2.99)</td>
+<td>flat</td>
+</tr>
+<tr>
+<td><code>heatingTypeWeights</code></td>
+<td>g CO₂e per kWh-equivalent factor; oil/gas/wood flat, <strong>hydro &amp; heatpump vary by province</strong> (grid intensity: QC 0.472 vs CO 142.0)</td>
+<td>nested by region</td>
+</tr>
+<tr>
+<td><code>heatingEfficiencyWeight</code></td>
+<td>dimensionless efficiency (heat pump 2.74 = COP; gas 0.87)</td>
+<td>flat</td>
+</tr>
+<tr>
+<td><code>buildingStandardWeight</code></td>
+<td>energy intensity multiplier by region × building age</td>
+<td>nested</td>
+</tr>
+<tr>
+<td><code>vehicleTypeWeights</code></td>
+<td><strong>kg CO₂e per km</strong> by region × fuel × size (battery varies by grid: QC 0.040 vs CO 0.081… check)</td>
+<td>nested ×3</td>
+</tr>
+<tr>
+<td><code>dietTypeWeights</code></td>
+<td>t CO₂e <strong>per year</strong> (omnivore 1.63 → vegan 0.50)</td>
+<td>flat</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Things to understand and be ready to defend:</strong></p>
+<ul>
+<li>Why &quot;hydro&quot; and &quot;heatpump&quot; weights vary by province: they draw grid electricity, and grid carbon intensity differs (Québec hydro ≈ clean; Alberta/Colorado fossil-heavy). Note the in-code comment: <em>&quot;hydro (should be labeled electric)&quot;</em> — terminology matters for the paper.</li>
+<li>Why EV (<code>battery</code>) car weights differ by region but <code>petrol</code>/<code>diesel</code> don't.</li>
+<li>The <code>VH:</code> comments are your supervisor's revision notes embedded in the code (building-standard table update, blank-diet default = omnivore) — they document modelling decisions.</li>
+<li>Defaults for non-response: blank heating → gas's weight (50.149), blank diet → omnivore. Be ready to justify &quot;blank = most common category&quot; to a reviewer.</li>
+</ul>
+<p><strong>⚠ Inconsistencies to investigate (a reviewer might catch these — find them yourself first):</strong></p>
+<ol>
+<li><code>buildingStandardWeight</code>: QC's blank key is <code>&quot;&quot;</code> but every other region uses <code>&quot;blank&quot;</code>. <code>getBuildingStandard(&quot;&quot;)</code> returns <code>&quot;&quot;</code> — so a blank answer outside Québec looks up <code>undefined</code> → heating becomes <code>NaN</code>. Verify this and decide if it's a real bug.</li>
+<li><code>getFuelType</code> returns <code>&quot;PHEV&quot;</code> (uppercase) but <code>vehicleTypeWeights</code> keys are <code>&quot;phev&quot;</code> (lowercase) → PHEV drivers fall through to the <code>{car:0, truck:0, suv:0}</code> fallback, i.e. <strong>zero vehicle emissions</strong>. Verify.</li>
+<li><code>getCarSize</code> maps recodes to <code>[&quot;&quot;, &quot;car&quot;, &quot;suv&quot;, &quot;truck&quot;]</code> — confirm this matches the current survey's answer order.</li>
+</ol>
+<p><strong>Tasks:</strong> Build a one-page &quot;emission factors &amp; sources&quot; sheet. Reproduce the tables (copy-paste is fine here — the learning is in the sourcing, not the typing).</p>
+<p><strong>Checkpoint:</strong> For each table: state its unit, why it's (or isn't) region-dependent, and where the numbers come from.</p>
+<hr>
+<h2 id="phase-4--calculation-functions-lines-420%E2%80%93567-3-hours">Phase 4 — Calculation functions (lines 420–567) (~3 hours)</h2>
+<p>Work through each formula with <strong>units</strong> until the dimensional analysis closes:</p>
+<ul>
+<li><strong>Flight</strong> = Σ (count × per-flight tonnes) + flat <strong>+3 t</strong> if &quot;additional flight&quot; toggled; forced to 0 if &quot;no flight&quot; toggled. (The 3 t ≈ one long-haul flight — that's the what-if counterfactual.)</li>
+<li><strong>Heating</strong> = <code>(houseSize[ft²] / 10.7639)[→ m²] × buildingStandard[kWh/m²-ish factor] × (heatingFactor / efficiency)[g/kWh] / 1000 [→ t] / householdSize [per person]</code>. Note the survey collects <strong>square feet</strong> and the code converts to m² (the <code>VH:</code> comment).</li>
+<li><strong>Vehicle</strong> = <code>weight[kg/km] / 1000 [→ t/km] × mileage[km] / passengers</code>. Two unit traps:
+<ul>
+<li>US respondents answer in <strong>miles</strong> (q20); <code>mileage * 1.60934</code> converts miles → km (the inline comment says &quot;convert mileage to miles&quot; — it's actually converting <em>to kilometres</em>; be ready to explain the comment is wrong, not the math).</li>
+<li>⚠ Line 535: <code>(factor * mileage)/passengerSize.toFixed(1)</code> — <code>.toFixed(1)</code> binds to <code>passengerSize</code> (rounding the <em>divisor</em> to a string), not to the result. JS coerces the string back to a number so the math still works, but the result is <strong>not</strong> rounded to 1 decimal like the other three functions. Know this precedence quirk; a code-savvy reviewer may ask.</li>
+</ul>
+</li>
+<li><strong>Diet</strong> = straight lookup, per person per year.</li>
+<li><strong>Total</strong> = sum, also refreshes the four <code>G_*ChartValue</code> globals (a side effect — calling it recomputes everything).</li>
+<li><strong><code>calculateYAxisMaxCounterfactual</code></strong> = current total + 3 t (the hypothetical extra long-haul flight) + headroom, ceiling'd. This fixes the y-axis high enough that toggling &quot;additional flight&quot; never clips the chart — important for visual comparability across scenarios (an experimental-design point worth explaining in the paper).</li>
+</ul>
+<p><strong>Tasks:</strong></p>
+<ul>
+<li>Hand-calculate one full persona on paper (e.g., Ontario, gas-heated 1500 ft² newer house, 2-person household, petrol car 15,000 km solo, 2 short + 1 long flight, omnivore). Then verify against the code in Node.</li>
+<li>Reproduce all five functions from memory.</li>
+</ul>
+<p><strong>Checkpoint:</strong> Write each formula in mathematical notation with units — this is essentially the methods-section paragraph.</p>
+<hr>
+<h2 id="phase-5--populating-settings-the-branching-logic-lines-577%E2%80%93680-15-hours">Phase 5 — Populating settings: the branching logic (lines 577–680) (~1.5 hours)</h2>
+<ul>
+<li>Country (q17) sets <code>G_MileageType</code> (KM vs MILES) and which province question to read (q18 vs q19).</li>
+<li>Flight block: only if &quot;have you flown&quot; = yes; picks the province-specific short-haul QID; medium/long are per-country QIDs; <code>business</code> legs are hard-coded 0 (a leftover from an earlier design — worth knowing why it's still here).</li>
+<li>House block: note <code>heatingEfficiency</code> is set to the <strong>same answer</strong> as <code>heatingType</code> (q16). Consequence: the radio-button toggles later change <code>heatingType</code> but <em>not</em> <code>heatingEfficiency</code> — so a what-if switch to a heat pump uses the heat-pump grid factor but the <em>original</em> system's efficiency. Decide whether that's intended; be ready to explain either way.</li>
+<li>Car block: no car access → <code>fuelType: &quot;novehicle&quot;</code> → falls to the zero-weight fallback in Phase 4.</li>
+</ul>
+<p><strong>Checkpoint:</strong> Draw the decision tree from (country, province, flown?) to which qN fields actually get used.</p>
+<hr>
+<h2 id="phase-6--chartjs-rendering-lines-686%E2%80%93766-2-hours">Phase 6 — Chart.js rendering (lines 686–766) (~2 hours)</h2>
+<ul>
+<li>The syntax (<code>scales.xAxes: [...]</code>, <code>options.title</code>, <code>ticks.max</code>) is <strong>Chart.js v2</strong> — v3/v4 changed all of these. For reproduction you must load Chart.js 2.x (e.g. 2.9.4 from CDN), or the chart silently won't render.</li>
+<li>Structure: a <strong>stacked bar</strong> faked across 3 categories. Each of the 6 datasets has data <code>[x, 0, 0]</code> / <code>[0, x, 0]</code> / <code>[0, 0, x]</code> so the four emission components stack only in column 1, the global average only in column 2, the target only in column 3.</li>
+<li><strong>Dataset order matters</strong>: indices 0–3 (Diet, Ground Transport, Flight, Home Heating) are hard-coded in the event listeners (<code>datasets[2]</code> = flight, etc.). Reorder them and the toggles update the wrong bars.</li>
+<li><code>legend.onClick: function(){}</code> — deliberately disables Chart.js's default &quot;click legend to hide dataset&quot; so respondents can't hide bars (experimental control).</li>
+<li>y-axis: fixed <code>max: G_ChartYMax</code> (Phase 4), tick callback appends <code>&quot; t&quot;</code>, axis label <code>t CO₂e</code>.</li>
+</ul>
+<p><strong>Task — build the local harness (this is where reproduction becomes real):</strong>
+Create <code>reproduction/index.html</code>:</p>
+<pre class="hljs"><code><div><span class="hljs-tag">&lt;<span class="hljs-name">canvas</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"myChart"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">canvas</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- jQuery 3.x + Chart.js 2.9.4 from CDN --&gt;</span>
+<span class="hljs-comment">&lt;!-- radio groups: flightToggle, heatingToggle, vehicleToggle, dietToggle
+     with the value strings used in the listeners --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"reproducing-code.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</div></code></pre>
+<p>In <code>reproducing-code.js</code>, replace the Qualtrics wrapper with a plain DOMContentLoaded (or keep the wrapper and stub <code>Qualtrics.SurveyEngine.addOnReady = fn =&gt; fn()</code>), and replace <code>qData</code> piped-text with a mock persona. Now you can open it in a browser and see the actual chart.</p>
+<p><strong>Checkpoint:</strong> Explain how a &quot;stacked bar with three separate columns&quot; is constructed from six datasets, and why the y-axis max is frozen.</p>
+<hr>
+<h2 id="phase-7--interactivity-jquery-toggles-lines-776%E2%80%93925-15-hours">Phase 7 — Interactivity: jQuery toggles (lines 776–925) (~1.5 hours)</h2>
+<ul>
+<li><strong>Initial state</strong>: <code>$(&quot;input:radio[name=X]&quot;).val([...])</code> <em>checks</em> the radio matching the respondent's real answer (jQuery's set-by-array form). Note the collapsing: petrol &amp; diesel both display as &quot;petrol&quot;; unknown heating defaults the toggle to &quot;oil&quot;.</li>
+<li><strong>Listeners</strong>: all four follow the same template — switch on the new value → mutate <code>G_SurveySettings</code> → recompute that component + total → poke <code>datasets[i].data[0]</code> → update title → <code>G_ChartObj.update()</code>.</li>
+<li>Flight is the special one: three states (current / <strong>additional</strong> (+3 t) / none) — this is the behavioural-intervention lever of the study.</li>
+</ul>
+<p><strong>Tasks:</strong> Reproduce the listeners; in your harness, click through every toggle and watch the chart respond. Confirm the heating-efficiency quirk from Phase 5 in the console.</p>
+<p><strong>Checkpoint:</strong> Trace, step by step, what happens in the code when a respondent clicks &quot;vegan&quot;.</p>
+<hr>
+<h2 id="phase-8--validation--explanation-prep-2-hours">Phase 8 — Validation &amp; explanation prep (~2 hours)</h2>
+<ol>
+<li><strong>Golden tests</strong>: pick 3 personas (e.g., QC heat-pump vegan cyclist; AB truck-driving omnivore frequent flyer; NY apartment mid-everything). Compute expected values by hand, then verify both the original and your reproduction print identical numbers (<code>calculateTotalEmissions</code> logs everything to console).</li>
+<li><strong>Edge cases</strong>: all-blank answers; US respondent; PHEV driver; non-QC blank building standard (the suspected NaN). Document actual behaviour.</li>
+<li><strong>Write the explainer</strong>: one page, audience = journal reviewer: data flow, formulas with units, factor sources, the fixed-axis/disabled-legend design choices, and known limitations (single-digit recode parser, the inconsistencies found in Phases 3–5).</li>
+<li>Walk your supervisor through it; every question you can't answer goes back into the relevant phase.</li>
+</ol>
+<hr>
+<h2 id="suggested-order--rough-budget-16-hours-total">Suggested order &amp; rough budget (~16 hours total)</h2>
+<table>
+<thead>
+<tr>
+<th>Session</th>
+<th>Phases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0 + 1 (orientation, Qualtrics layer)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2 + start 3 (parsers, weights)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>finish 3 (factor sourcing — involve supervisor)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>4 (calculations + hand-calc)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5 + 6 (branching, chart, local harness)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>7 + 8 (interactivity, validation, explainer)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="open-questions-to-resolve-with-your-supervisor">Open questions to resolve with your supervisor</h2>
+<ul>
+<li>Citation/source for every weight table, and for the 3.8 t global average &amp; 2.5 t 2030 target.</li>
+<li>Are the PHEV-case (zero emissions) and non-QC blank building standard (NaN) bugs or accepted behaviour?</li>
+<li>Should the heating <em>efficiency</em> follow the heating-type toggle in what-if scenarios?</li>
+<li>Why are <code>business</code> flight fields kept but always 0?</li>
+</ul>
+
+</body>
+</html>

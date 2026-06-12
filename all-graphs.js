@@ -176,7 +176,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
 
   function getFuelType(val) {
     // 1-based index (1,2,3,4,5)
-    let fuels = ["", "petrol", "diesel", "hybrid", "phev", "battery"];
+    let fuels = ["", "petrol", "diesel", "battery", "hybrid", "PHEV"];
     let choice = extractSelectedChoices(val);
     return fuels[choice];
   }
@@ -185,7 +185,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   // Changing this to car, suv, and truck
   function getCarSize(val) {
     // 1-based index (1,2,3,4)
-    let size = ["", "car", "truck", "suv"];
+    let size = ["", "car", "suv", "truck"];
     let choice = extractSelectedChoices(val);
     return size[choice];
   }
