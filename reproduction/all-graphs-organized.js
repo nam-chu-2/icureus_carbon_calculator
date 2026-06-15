@@ -74,9 +74,30 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     q25: "${q://QID282/ChoiceTextEntryValue}", // Short-haul flights (MICHIGAN)
     q26: "${q://QID284/ChoiceTextEntryValue}", // Short-haul flights (COLORADO)
     q27: "${q://QID286/ChoiceTextEntryValue}", // Short-haul flights (WASHINGTON)
-    q28: "${q://QID288/ChoiceTextEntryValue}", // Medium-haul flights (USA)
-    q29: "${q://QID290/ChoiceTextEntryValue}", // Long-haul flights (USA)
+    q28: "${q://QID288/ChoiceTextEntryValue}", // Medium-haul flights (USA) [legacy country-level — superseded by q31-q38]
+    q29: "${q://QID290/ChoiceTextEntryValue}", // Long-haul flights (USA) [legacy country-level — superseded by q39-q46]
     q30: "${q://QID343/ChoiceTextEntryValue}", // How many people do you drive with?
+    // Per-province/state MEDIUM-haul flights. Mirrors the short-haul split
+    // (q8, q21-q27). TODO: replace the QID_MED_* placeholders with the real
+    // Qualtrics question IDs once the per-region questions are created.
+    q31: "${q://QID_MED_ON/ChoiceTextEntryValue}", // Medium-haul flights (ONTARIO)
+    q32: "${q://QID_MED_QC/ChoiceTextEntryValue}", // Medium-haul flights (QUEBEC)
+    q33: "${q://QID_MED_AB/ChoiceTextEntryValue}", // Medium-haul flights (ALBERTA)
+    q34: "${q://QID_MED_BC/ChoiceTextEntryValue}", // Medium-haul flights (BC)
+    q35: "${q://QID_MED_NY/ChoiceTextEntryValue}", // Medium-haul flights (NEW YORK)
+    q36: "${q://QID_MED_MI/ChoiceTextEntryValue}", // Medium-haul flights (MICHIGAN)
+    q37: "${q://QID_MED_CO/ChoiceTextEntryValue}", // Medium-haul flights (COLORADO)
+    q38: "${q://QID_MED_WA/ChoiceTextEntryValue}", // Medium-haul flights (WASHINGTON)
+    // Per-province/state LONG-haul flights. TODO: replace the QID_LONG_*
+    // placeholders with the real Qualtrics question IDs.
+    q39: "${q://QID_LONG_ON/ChoiceTextEntryValue}", // Long-haul flights (ONTARIO)
+    q40: "${q://QID_LONG_QC/ChoiceTextEntryValue}", // Long-haul flights (QUEBEC)
+    q41: "${q://QID_LONG_AB/ChoiceTextEntryValue}", // Long-haul flights (ALBERTA)
+    q42: "${q://QID_LONG_BC/ChoiceTextEntryValue}", // Long-haul flights (BC)
+    q43: "${q://QID_LONG_NY/ChoiceTextEntryValue}", // Long-haul flights (NEW YORK)
+    q44: "${q://QID_LONG_MI/ChoiceTextEntryValue}", // Long-haul flights (MICHIGAN)
+    q45: "${q://QID_LONG_CO/ChoiceTextEntryValue}", // Long-haul flights (COLORADO)
+    q46: "${q://QID_LONG_WA/ChoiceTextEntryValue}", // Long-haul flights (WASHINGTON)
   };
   console.log(qData);
 
@@ -268,6 +289,30 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     WA: "q27",
   };
 
+  // Which qData field holds the MEDIUM-haul flight count for each region. [P2]
+  const MEDIUM_HAUL_QUESTION_BY_REGION = {
+    ON: "q31",
+    QC: "q32",
+    AB: "q33",
+    BC: "q34",
+    NY: "q35",
+    MI: "q36",
+    CO: "q37",
+    WA: "q38",
+  };
+
+  // Which qData field holds the LONG-haul flight count for each region. [P2]
+  const LONG_HAUL_QUESTION_BY_REGION = {
+    ON: "q39",
+    QC: "q40",
+    AB: "q41",
+    BC: "q42",
+    NY: "q43",
+    MI: "q44",
+    CO: "q45",
+    WA: "q46",
+  };
+
   /* =========================================================================
    * 5. GENERIC PARSERS  [P4: pure functions — string in, value out]
    * ========================================================================= */
@@ -344,8 +389,12 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       flight.short.personal = parseIntOrZero(
         qData[SHORT_HAUL_QUESTION_BY_REGION[region]]
       );
-      flight.medium.personal = parseIntOrZero(isCanada ? qData.q9 : qData.q28);
-      flight.long.personal = parseIntOrZero(isCanada ? qData.q10 : qData.q29);
+      flight.medium.personal = parseIntOrZero(
+        qData[MEDIUM_HAUL_QUESTION_BY_REGION[region]]
+      );
+      flight.long.personal = parseIntOrZero(
+        qData[LONG_HAUL_QUESTION_BY_REGION[region]]
+      );
     }
 
     // -- Heating --
