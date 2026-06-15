@@ -47,6 +47,26 @@ const qData = {
     q29: "${q://QID370/ChoiceTextEntryValue}", // # of long haul flights (Washington)
     q30: "${q://QID372/ChoiceTextEntryValue}", // # of long haul flights (Colorado)
     q31: "${q://QID374/ChoiceTextEntryValue}", // # of long haul flights (Michigan)
+    q32: "${q://QID21/SelectedChoicesRecode}", // Diet: {Omnivore: 1, Flexitarian: 2, Vegetarian: 3, Vegan: 4}
+    q33: "${q://QID23/SelectedChoicesRecode}", // Age of Residence: {< 1960: 1, 1960-1983: 2, > 1983: 3}
+    q34: "${q://QID24/SelectedChoicesRecode}", // Size of household: {1-10+}
+    q35: "${q://QID25/ChoiceTextEntryValue}", // Size of Residence 
+    q36: "${q://QID26/SelectedChoicesRecode}", // Main type of heating {Oil: 1, Gas: 2, Electric: 3, Heat pump: 4, Wood: 6, I don't know: 7}
+    q37: "${q://QID262/SelectedChoicesRecode}", // What is your country: {Canada: 1, USA: 2}
+    q38: "${q://QID1720071882/SelectedChoicesRecode}", // Which province? {Ontario: 1, Quebec: 2, Alberta: 3, British Columbia: 4}
+    q39: "${q://QID1720071883/SelectedChoicesRecode}", // Which state? {Washington: 1, Colorado: 2, Michigan: 3, New York: 4}
+}; console.log(qData)
+// Constants
 
-}
+// Chart Benchmarks (tonnes C02e per person per year)
+const GLOBAL_AVERAGE_TONNES = 3.8;
+const SUSTAINABLE_TARGET_TONNES = 2.5;
+const ADDITIONAL_FLIGHT_TONNES = 3.0;
+
+const SQFT_PER_SQM = 10.7639; 
+const KM_PER_MILE = 1.60934;
+const KG_PER_TONNE = 1000;
+
+const Y_AXIS_HEADROOM_TONNES = 0.5;
 })
+
