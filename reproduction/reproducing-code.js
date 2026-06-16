@@ -70,3 +70,61 @@ const KG_PER_TONNE = 1000;
 const Y_AXIS_HEADROOM_TONNES = 0.5;
 })
 
+const FLIGHT_FACTOR_TONNES = {
+    short: 0.181154,
+    medium: 0.746467,
+    long: 2.9911917,
+    default: 0,
+};
+
+const GRID_INTENSITY = {
+    BC: 4.167,
+    AB: 136.111,
+    ON: 10.556,
+    QC: 0.472,
+    WA: 36.791,
+    CO: 142.0,
+    MI: 114.91,
+    NY: 65.771,
+};
+
+const HEATING_FACTOR = {
+    oil: 70.271,
+    gas: 50.149,
+    hydro: GRID_INTENSITY,
+    heatpump: GRID_INTENSITY,
+    wood: 0.001,
+    unknown: 50.149,
+    "": 50.149,
+};
+
+const HEATING_EFFICIENCY = {
+    oil: 0.81,
+    gas: 0.8725,
+    hydro: 1.0,
+    heatpump: 2.74,
+    wood: 0.78,
+    unknown: 0.9,
+    "": 0.9,
+};
+
+const BUILDING_STANDARD_QC = {old: 0.62, mid: 0.55, new: 0.52, blank: 0.56};
+
+const BUILDING_STANDARD_ON = {old: 0.62, mid: 0.54, new: 0.46, blank: 0.54};
+
+const BUILDING_STANDARD_AB = {old: 0.76, mid: 0.74, new: 0.61, blank: 0.70};
+
+const BUILDING_STANDARD_BC = {old: 0.57, mid: 0.53, new: 0.49, blank: 0.58};
+
+const BUILDING_STANDARD_BY_REGION = {
+    QC: BUILDING_STANDARD_QC,
+    ON: BUILDING_STANDARD_ON,
+    AB: BUILDING_STANDARD_AB,
+    BC: BUILDING_STANDARD_BC,
+    WA: BUILDING_STANDARD_BC,
+    MI: BUILDING_STANDARD_ON,
+    CO: BUILDING_STANDARD_ON,
+    NY: BUILDING_STANDARD_ON,
+};
+
+
