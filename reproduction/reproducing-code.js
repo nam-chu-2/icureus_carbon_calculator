@@ -70,6 +70,13 @@ const KG_PER_TONNE = 1000;
 const Y_AXIS_HEADROOM_TONNES = 0.5;
 })
 
+const DIET_FACTOR_TONNES = {
+    omnivore: 1.6279,
+    flexitarian: 1.23735,
+    vegetarian: 0.8468,
+    vegan: 0.5037,
+};
+
 const FLIGHT_FACTOR_TONNES = {
     short: 0.181154,
     medium: 0.746467,
@@ -109,11 +116,8 @@ const HEATING_EFFICIENCY = {
 };
 
 const BUILDING_STANDARD_QC = {old: 0.62, mid: 0.55, new: 0.52, blank: 0.56};
-
 const BUILDING_STANDARD_ON = {old: 0.62, mid: 0.54, new: 0.46, blank: 0.54};
-
 const BUILDING_STANDARD_AB = {old: 0.76, mid: 0.74, new: 0.61, blank: 0.70};
-
 const BUILDING_STANDARD_BC = {old: 0.57, mid: 0.53, new: 0.49, blank: 0.58};
 
 const BUILDING_STANDARD_BY_REGION = {
@@ -127,4 +131,87 @@ const BUILDING_STANDARD_BY_REGION = {
     NY: BUILDING_STANDARD_ON,
 };
 
+const COMBUSTION = {
+    petrol = {car: 0.215, truck: 0.315, suv: 0.315}, 
+    diesel = {car: 0.181, truck: 0.266, suv: 0.266},
+    hybrid = {car: 0.144, truck: 0.219, suv: 0.219},
+};
+
+const VEHICLE_FACTOR_BY_REGION = {
+    WA: {...COMBUSTION, 
+        phev: {car: 0.086, truck: 0.128, suv: 0.128}, 
+        battery: {car: 0.05, truck: 0.081, suv: 0.081}},
+    CO: {...COMBUSTION, 
+        phev: {car: 0.086, truck: 0.128, suv: 0.128},
+        battery: {car: 0.05, truck: 0.081, suv: 0.081}},
+    MI: {...COMBUSTION,
+        phev: {car: 0.098, truck: 0.144, suv: 0.144},
+        battery: {car: 0.077, truck: 0.124, suv: 0.124}},
+    NY: {...COMBUSTION, 
+        phev: {car: 0.081, truck: 0.122, suv: 0.122}, 
+        battery: {car: 0.04, truck: 0.064, suv: 0.064}},
+    BC: {...COMBUSTION, 
+        phev: {car: 0.081, truck: 0.122, suv: 0.122},
+        battery: {car: 0.04, truck: 0.065, suv: 0.065}},
+    AB: {...COMBUSTION,
+        phev: {car: 0.086, truck: 0.128, suv: 0.128},
+        battery: {car: 0.05, truck: 0.08, suv: 0.08}},
+    ON: {...COMBUSTION,
+        phev: {car: 0.081, truck: 0.122, suv: 0.122},
+        battery: {car: 0.04, truck: 0.065, suv: 0.065}},
+    QC: {...COMBUSTION, 
+        phev: {car: 0.081, truck: 0.122, suv: 0.122}, 
+        battery: {car: 0.04, truck: 0.064, suv: 0.064}},
+};
+
+/* =========================================================================
+   * 4. ANSWER-OPTION TABLES  [P2: survey recodes map to values through data]
+   * -------------------------------------------------------------------------
+   * Each array is 1-based: Qualtrics recode 1 selects element 1. Index 0 is
+   * the fallback for a blank (unanswered) question.
+   * ========================================================================= */
+
+const OPTIONS = {
+    buildingStandard: ["old", "mid", "new"],
+    heatingType: ["oil", "gas", "hydro", "heatpump", "wood", "unknown"],
+    fuelType: ["petrol", "diesel", "hybrid", "phev", "battery"],
+    carSize: ["car", "truck", "suv"],
+    diet: ["omnivore", "flexitarian", "vegetarian", "vegan"],
+    canadaProvince: ["ON", "QC", "AB", "BC"],
+    usaState: ["WA", "CO", "MI", "NY"],
+    householdsize: [1,2,3,4,5,6,7,8,9,10],
+};
+
+const SHORT_HAUL_QUESTION_BY_REGION = {
+    ON: "q8",
+    QC: "q9",
+    AB: "q10",
+    BC: "q11",
+    NY: "q12",
+    MI: "q13",
+    CO: "q14",
+    WA: "q15",
+};
+
+const MEDIUM_HAUL_QUESTION_BY_REGION = {
+    ON: "q16",
+    QC: "q17",
+    AB: "q18",
+    BC: "q19",
+    NY: "q20",
+    MI: "q21",
+    CO: "q22",
+    WA: "q23",
+};
+
+const LONG_HAUL_QUESTION_BY_REGION = {
+    ON: "q24",
+    QC: "q25",
+    AB: "q26",
+    BC: "q27",
+    NY: "q28",
+    WA: "q29",
+    CO: "q30",
+    MI: "q31",
+};
 
