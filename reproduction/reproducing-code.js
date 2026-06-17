@@ -51,7 +51,7 @@ const qData = {
     q33: "${q://QID23/SelectedChoicesRecode}", // Age of Residence: {< 1960: 1, 1960-1983: 2, > 1983: 3}
     q34: "${q://QID24/SelectedChoicesRecode}", // Size of household: {1-10+}
     q35: "${q://QID25/ChoiceTextEntryValue}", // Size of Residence 
-    q36: "${q://QID26/SelectedChoicesRecode}", // Main type of heating {Oil: 1, Gas: 2, Electric: 3, Heat pump: 4, Wood: 6, I don't know: 7}
+    q36: "${q://QID26/SelectedChoicesRecode}", // Main type of heating {Oil: 1, Gas: 2, Electric: 3, Heat pump: 4, Wood: 5, I don't know: 6}
     q37: "${q://QID262/SelectedChoicesRecode}", // What is your country: {Canada: 1, USA: 2}
     q38: "${q://QID1720071882/SelectedChoicesRecode}", // Which province? {Ontario: 1, Quebec: 2, Alberta: 3, British Columbia: 4}
     q39: "${q://QID1720071883/SelectedChoicesRecode}", // Which state? {Washington: 1, Colorado: 2, Michigan: 3, New York: 4}
@@ -132,9 +132,9 @@ const BUILDING_STANDARD_BY_REGION = {
 };
 
 const COMBUSTION = {
-    petrol = {car: 0.215, truck: 0.315, suv: 0.315}, 
-    diesel = {car: 0.181, truck: 0.266, suv: 0.266},
-    hybrid = {car: 0.144, truck: 0.219, suv: 0.219},
+    petrol : {car: 0.215, truck: 0.315, suv: 0.315}, 
+    diesel : {car: 0.181, truck: 0.266, suv: 0.266},
+    hybrid : {car: 0.144, truck: 0.219, suv: 0.219},
 };
 
 const VEHICLE_FACTOR_BY_REGION = {
@@ -172,14 +172,14 @@ const VEHICLE_FACTOR_BY_REGION = {
    * ========================================================================= */
 
 const OPTIONS = {
-    buildingStandard: ["old", "mid", "new"],
-    heatingType: ["oil", "gas", "hydro", "heatpump", "wood", "unknown"],
-    fuelType: ["petrol", "diesel", "hybrid", "phev", "battery"],
-    carSize: ["car", "truck", "suv"],
-    diet: ["omnivore", "flexitarian", "vegetarian", "vegan"],
-    canadaProvince: ["ON", "QC", "AB", "BC"],
-    usaState: ["WA", "CO", "MI", "NY"],
-    householdsize: [1,2,3,4,5,6,7,8,9,10],
+    buildingStandard: ["", "old", "mid", "new"],
+    heatingType: ["", "oil", "gas", "hydro", "heatpump", "wood", "unknown"], // wood=5, unknown=6
+    fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"],
+    carSize: ["", "car", "truck", "suv"],
+    diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
+    canadaProvince: ["", "ON", "QC", "AB", "BC"],
+    usaState: ["", "WA", "CO", "MI", "NY"],
+    householdsize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // index 0 (blank) -> 1 person
 };
 
 const SHORT_HAUL_QUESTION_BY_REGION = {
@@ -206,8 +206,8 @@ const MEDIUM_HAUL_QUESTION_BY_REGION = {
 
 const LONG_HAUL_QUESTION_BY_REGION = {
     ON: "q24",
-    QC: "q25",
-    AB: "q26",
+    AB: "q25",
+    QC: "q26",
     BC: "q27",
     NY: "q28",
     WA: "q29",
@@ -215,3 +215,98 @@ const LONG_HAUL_QUESTION_BY_REGION = {
     MI: "q31",
 };
 
+/* =========================================================================
+   * 5. GENERIC PARSERS  [P4: pure functions — string in, value out]
+   * ========================================================================= */
+
+/**
+ * Returns 0 or parsed integer for Qualtrics answers.
+ * 
+ * Qualtrics survey responses come back as strings, so this function
+ * is used to return a number (integer) instead. 
+ * 
+ * @param {string} answer  - string from qualtrics (may be empty/undefined)
+ * @returns {number} the parsed integer or 0
+ */
+
+function parseIntOrZero(answer){
+    const parsed = parseInt(answer);
+    return isNaN(parsed) ? 0: parsed;
+}
+
+/**
+ * Returns re-coded values for single-digit and multi-digit multiple selected answers (e.g., "1,2,3" -> 1,2,3)
+ * 
+ * @param {string} answer The respondent's answer
+ * @param {boolean} forceReturnArray 
+ * @returns the re-coded values from string to numeric
+ */
+function extractSelectedChoices(answer, forceReturnArray = false) {
+    const NO_ANSWER = 0;
+    let indices = [];
+    if (answer == null || String(answer).trim() === "") {
+        indices.push(NO_ANSWER);
+    } else {
+        indices = String(answer)
+            .split(",")
+            .map(part => parseInt(part.trim()));
+    }
+    return indices.length == 1 && !forceReturnArray ? indices[0] : indices;
+}
+
+/** Converts the recoded value into a label (e.g., 2 -> suv)
+ * 
+ * @param {numeric} answer 
+ * @param {Object} table 
+ * @returns Object
+ */
+
+function choiceFromTable(answer, table){
+    return table[extractSelectedChoices(answer)];
+}
+
+// Boolean wrapper for gate questions q1, q7 (do you have access to a vehicle and do you fly, respectively)
+function isFirstChoice(answer) {
+    return extractSelectedChoices(answer) == 1;
+}
+
+// Helper function that ensures the minimum number is 1 to prvent a division by zero error / similar errors
+function atLeastOne(answer) {
+    const value = parseIntOrZero(answer);
+    return value < 1 ? 1: value;
+}
+
+/* =========================================================================
+   * 6. INTERPRETATION: raw answers -> one state object  [P4, P5]
+   * -------------------------------------------------------------------------
+   * The original scattered this across G_ globals mutated at the top level.
+   * Here, one function reads qData and returns the complete survey state;
+   * nothing else ever reads qData.
+   * ========================================================================= */
+
+function buildSurveyState(qData) {
+    const isCanada = isFirstChoice(qData.q37);
+    const countryName = isCanada ? "CANADA" : "USA";
+    const mileageType = isCanada ? "KM" : "MILES";
+    const region = isCanada ? choiceFromTable(qData.q38, OPTIONS.canadaProvince) : choiceFromTable(qData.q39, OPTIONS.usaState);
+
+    // Flight options
+    const flight = {
+        short: {personal: 0},
+        medium: {personal: 0},
+        long: {personal: 0},
+        flownStatus: false,
+        additional: false,
+        noFlight: false,
+    };
+    if (isFirstChoice(qData.q7)) {
+        flight.flownStatus = true;
+        flight.short.personal = parseIntOrZero(qData[SHORT_HAUL_QUESTION_BY_REGION[region]]);
+        flight.medium.personal = parseIntOrZero(qData[MEDIUM_HAUL_QUESTION_BY_REGION[region]]);
+        flight.long.personal = parseIntOrZero(qData[LONG_HAUL_QUESTION_BY_REGION[region]])
+    }
+    const heating = {
+        houseSize: atLeastOne(qData.q35)
+        householdSize: choiceFromTable()
+    }
+}

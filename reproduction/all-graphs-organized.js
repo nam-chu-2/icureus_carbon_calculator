@@ -47,57 +47,45 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * must stay literal — it cannot be generated or moved out of the file.
    * ========================================================================= */
   const qData = {
-    q1: "${q://QID123/SelectedChoicesRecode}", // Do you have access to a car?
-    q2: "${q://QID2/SelectedChoicesRecode}", // What type of car do you drive?
-    q3: "${q://QID3/SelectedChoicesRecode}", // What size is your car?
-    q4: "${q://QID4/ChoiceNumericEntryValue/1}", // How many KILOMETERS do you drive per year?
-    q5: "${q://QID5/SelectedChoicesRecode}", // Public transport usage
-    q6: "${q://QID201/ChoiceTextEntryValue}", // How many kilometers do you drive per year by public transport?
-    q7: "${q://QID10/SelectedChoicesRecode}", // Do you expect to fly in 2025?
-    q8: "${q://QID12/ChoiceTextEntryValue}", // Short-haul flights in 2025 (ONTARIO)
-    q9: "${q://QID13/ChoiceTextEntryValue}", // Medium-haul flights in 2025 (CANADA)
-    q10: "${q://QID14/ChoiceTextEntryValue}", // Long-haul flights in 2025 (CANADA)
-    q11: "${q://QID21/SelectedChoicesRecode}", // What is your diet?
-    q12: "${q://QID35/SelectedChoicesRecode}", // Type of residence
-    q13: "${q://QID23/SelectedChoicesRecode}", // Building standard of your residence
-    q14: "${q://QID24/SelectedChoicesRecode}", // How many people live in your household?
-    q15: "${q://QID25/ChoiceTextEntryValue}", // Size of your house (collected in SQUARE FEET)
-    q16: "${q://QID26/SelectedChoicesRecode}", // What type of heating do you use?
-    q17: "${q://QID262/SelectedChoicesRecode}", // Which country?
-    q18: "${q://QID1720071882/SelectedChoicesRecode}", // Which Canadian province?
-    q19: "${q://QID1720071883/SelectedChoicesRecode}", // Which US state?
-    q20: "${q://QID302/ChoiceNumericEntryValue/1}", // How many MILES do you drive per year? (USA only)
-    q21: "${q://QID273/ChoiceTextEntryValue}", // Short-haul flights (QUEBEC)
-    q22: "${q://QID276/ChoiceTextEntryValue}", // Short-haul flights (ALBERTA)
-    q23: "${q://QID278/ChoiceTextEntryValue}", // Short-haul flights (BC)
-    q24: "${q://QID280/ChoiceTextEntryValue}", // Short-haul flights (NEW YORK)
-    q25: "${q://QID282/ChoiceTextEntryValue}", // Short-haul flights (MICHIGAN)
-    q26: "${q://QID284/ChoiceTextEntryValue}", // Short-haul flights (COLORADO)
-    q27: "${q://QID286/ChoiceTextEntryValue}", // Short-haul flights (WASHINGTON)
-    q28: "${q://QID288/ChoiceTextEntryValue}", // Medium-haul flights (USA) [legacy country-level — superseded by q31-q38]
-    q29: "${q://QID290/ChoiceTextEntryValue}", // Long-haul flights (USA) [legacy country-level — superseded by q39-q46]
-    q30: "${q://QID343/ChoiceTextEntryValue}", // How many people do you drive with?
-    // Per-province/state MEDIUM-haul flights. Mirrors the short-haul split
-    // (q8, q21-q27). TODO: replace the QID_MED_* placeholders with the real
-    // Qualtrics question IDs once the per-region questions are created.
-    q31: "${q://QID_MED_ON/ChoiceTextEntryValue}", // Medium-haul flights (ONTARIO)
-    q32: "${q://QID_MED_QC/ChoiceTextEntryValue}", // Medium-haul flights (QUEBEC)
-    q33: "${q://QID_MED_AB/ChoiceTextEntryValue}", // Medium-haul flights (ALBERTA)
-    q34: "${q://QID_MED_BC/ChoiceTextEntryValue}", // Medium-haul flights (BC)
-    q35: "${q://QID_MED_NY/ChoiceTextEntryValue}", // Medium-haul flights (NEW YORK)
-    q36: "${q://QID_MED_MI/ChoiceTextEntryValue}", // Medium-haul flights (MICHIGAN)
-    q37: "${q://QID_MED_CO/ChoiceTextEntryValue}", // Medium-haul flights (COLORADO)
-    q38: "${q://QID_MED_WA/ChoiceTextEntryValue}", // Medium-haul flights (WASHINGTON)
-    // Per-province/state LONG-haul flights. TODO: replace the QID_LONG_*
-    // placeholders with the real Qualtrics question IDs.
-    q39: "${q://QID_LONG_ON/ChoiceTextEntryValue}", // Long-haul flights (ONTARIO)
-    q40: "${q://QID_LONG_QC/ChoiceTextEntryValue}", // Long-haul flights (QUEBEC)
-    q41: "${q://QID_LONG_AB/ChoiceTextEntryValue}", // Long-haul flights (ALBERTA)
-    q42: "${q://QID_LONG_BC/ChoiceTextEntryValue}", // Long-haul flights (BC)
-    q43: "${q://QID_LONG_NY/ChoiceTextEntryValue}", // Long-haul flights (NEW YORK)
-    q44: "${q://QID_LONG_MI/ChoiceTextEntryValue}", // Long-haul flights (MICHIGAN)
-    q45: "${q://QID_LONG_CO/ChoiceTextEntryValue}", // Long-haul flights (COLORADO)
-    q46: "${q://QID_LONG_WA/ChoiceTextEntryValue}", // Long-haul flights (WASHINGTON)
+    q1: "${q://QID123/SelectedChoicesRecode}", // Car Access: {Yes: 1, No: 2}
+    q2: "${q://QID2/SelectedChoicesRecode}", // Type of car: {Gas: 1, Diesel: 2, Hybrid: 3, Plug-in hybrid: 4, Electric: 5}
+    q3: "${q://QID3/SelectedChoicesRecode}", // Size of car: {Car: 1, Truck: 2, SUV: 3}
+    q4: "${q://QID4/ChoiceNumericEntryValue/1}", // Kilometers driven: 0 - 30,000 +
+    q5: "${q://QID302/ChoiceNumericEntryValue/1}", // Miles driven: 0 - 39,000 +
+    q6: "${q://QID343/ChoiceTextEntryValue}", // How many people do you drive with? (Numeric)
+    q7: "${q://QID10/SelectedChoicesRecode}", // Do you expect to fly: {Yes: 1, No: 2}
+    q8: "${q://QID12/ChoiceTextEntryValue}", // # of short haul flights (Ontario)
+    q9: "${q://QID273/ChoiceTextEntryValue}", // # of short haul flights (Quebec)
+    q10: "${q://QID276/ChoiceTextEntryValue}", // # of short haul flights (Alberta)
+    q11: "${q://QID278/ChoiceTextEntryValue}", // # of short haul flights (British Columbia)
+    q12: "${q://QID280/ChoiceTextEntryValue}", // # of short haul flights (New York)
+    q13: "${q://QID282/ChoiceTextEntryValue}", // # of short haul flights (Michigan)
+    q14: "${q://QID284/ChoiceTextEntryValue}", // # of short haul flights (Colorado)
+    q15: "${q://QID286/ChoiceTextEntryValue}", // # of short haul flights (Washington)
+    q16: "${q://QID13/ChoiceTextEntryValue}", // # of medium haul flights (Ontario)
+    q17: "${q://QID326/ChoiceTextEntryValue}", // # of medium haul flights (Quebec)
+    q18: "${q://QID328/ChoiceTextEntryValue}", // # of medium haul flights (Alberta)
+    q19: "${q://QID330/ChoiceTextEntryValue}", // # of medium haul flights (British Columbia)
+    q20: "${q://QID288/ChoiceTextEntryValue}", // # of medium haul flights (New York)
+    q21: "${q://QID334/ChoiceTextEntryValue}", // # of medium haul flights (Michigan)
+    q22: "${q://QID332/ChoiceTextEntryValue}", // # of medium haul flights (Colorado)
+    q23: "${q://QID336/ChoiceTextEntryValue}", // # of medium haul flights (Washington)
+    q24: "${q://QID14/ChoiceTextEntryValue}", // # of long haul flights (Ontario)
+    q25: "${q://QID355/ChoiceTextEntryValue}", // # of long haul flights (Alberta)
+    q26: "${q://QID354/ChoiceTextEntryValue}", // # of long haul flights (Quebec)
+    q27: "${q://QID368/ChoiceTextEntryValue}", // # of long haul flights (British Columbia)
+    q28: "${q://QID290/ChoiceTextEntryValue}", // # of long haul flights (New York)
+    q29: "${q://QID370/ChoiceTextEntryValue}", // # of long haul flights (Washington)
+    q30: "${q://QID372/ChoiceTextEntryValue}", // # of long haul flights (Colorado)
+    q31: "${q://QID374/ChoiceTextEntryValue}", // # of long haul flights (Michigan)
+    q32: "${q://QID21/SelectedChoicesRecode}", // Diet: {Omnivore: 1, Flexitarian: 2, Vegetarian: 3, Vegan: 4}
+    q33: "${q://QID23/SelectedChoicesRecode}", // Age of Residence: {< 1960: 1, 1960-1983: 2, > 1983: 3}
+    q34: "${q://QID24/SelectedChoicesRecode}", // Size of household: {1-10+}
+    q35: "${q://QID25/ChoiceTextEntryValue}", // Size of Residence
+    q36: "${q://QID26/SelectedChoicesRecode}", // Main type of heating {Oil: 1, Gas: 2, Electric: 3, Heat pump: 4, Wood: 5, I don't know: 6}
+    q37: "${q://QID262/SelectedChoicesRecode}", // What is your country: {Canada: 1, USA: 2}
+    q38: "${q://QID1720071882/SelectedChoicesRecode}", // Which province? {Ontario: 1, Quebec: 2, Alberta: 3, British Columbia: 4}
+    q39: "${q://QID1720071883/SelectedChoicesRecode}", // Which state? {Washington: 1, Colorado: 2, Michigan: 3, New York: 4}
   };
   console.log(qData);
 
@@ -267,9 +255,9 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * ========================================================================= */
   const OPTIONS = {
     buildingStandard: ["", "old", "mid", "new"],
-    heatingType: ["", "oil", "gas", "hydro", "heatpump", "wood", "unknown"],
-    fuelType: ["", "petrol", "diesel", "battery", "hybrid", "PHEV"], // [Q1]
-    carSize: ["", "car", "suv", "truck"],
+    heatingType: ["", "oil", "gas", "hydro", "heatpump", "wood", "unknown"], // wood=5, unknown=6
+    fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"], // [Q1]
+    carSize: ["", "car", "truck", "suv"],
     diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
     canadaProvince: ["", "ON", "QC", "AB", "BC"],
     usaProvince: ["", "WA", "CO", "MI", "NY"],
@@ -280,37 +268,37 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   // (The original used an 8-branch if/else chain for this.)
   const SHORT_HAUL_QUESTION_BY_REGION = {
     ON: "q8",
-    QC: "q21",
-    AB: "q22",
-    BC: "q23",
-    NY: "q24",
-    MI: "q25",
-    CO: "q26",
-    WA: "q27",
+    QC: "q9",
+    AB: "q10",
+    BC: "q11",
+    NY: "q12",
+    MI: "q13",
+    CO: "q14",
+    WA: "q15",
   };
 
   // Which qData field holds the MEDIUM-haul flight count for each region. [P2]
   const MEDIUM_HAUL_QUESTION_BY_REGION = {
-    ON: "q31",
-    QC: "q32",
-    AB: "q33",
-    BC: "q34",
-    NY: "q35",
-    MI: "q36",
-    CO: "q37",
-    WA: "q38",
+    ON: "q16",
+    QC: "q17",
+    AB: "q18",
+    BC: "q19",
+    NY: "q20",
+    MI: "q21",
+    CO: "q22",
+    WA: "q23",
   };
 
   // Which qData field holds the LONG-haul flight count for each region. [P2]
   const LONG_HAUL_QUESTION_BY_REGION = {
-    ON: "q39",
-    QC: "q40",
-    AB: "q41",
-    BC: "q42",
-    NY: "q43",
-    MI: "q44",
-    CO: "q45",
-    WA: "q46",
+    ON: "q24",
+    QC: "q26",
+    AB: "q25",
+    BC: "q27",
+    NY: "q28",
+    MI: "q31",
+    CO: "q30",
+    WA: "q29",
   };
 
   /* =========================================================================
@@ -331,14 +319,12 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   function extractSelectedChoices(answer, forceReturnArray = false) {
     const NO_ANSWER = 0;
     let indices = [];
-    if (answer == "") {
+    if (answer == null || String(answer).trim() === "") {
       indices.push(NO_ANSWER);
     } else {
-      while (answer.includes(",")) {
-        indices.push(parseInt(answer.charAt(0)));
-        answer = answer.substring(3); // drop the digit and ", "
-      }
-      indices.push(parseInt(answer.charAt(0)));
+      indices = String(answer)
+        .split(",")
+        .map(part => parseInt(part.trim())); // split on comma; handles multi-digit recodes
     }
     return indices.length == 1 && !forceReturnArray ? indices[0] : indices;
   }
@@ -368,12 +354,12 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * nothing else ever reads qData.
    * ========================================================================= */
   function buildSurveyState(qData) {
-    const isCanada = isFirstChoice(qData.q17);
+    const isCanada = isFirstChoice(qData.q37);
     const countryName = isCanada ? "CANADA" : "USA";
     const mileageType = isCanada ? "KM" : "MILES";
     const region = isCanada
-      ? choiceFromTable(qData.q18, OPTIONS.canadaProvince)
-      : choiceFromTable(qData.q19, OPTIONS.usaProvince);
+      ? choiceFromTable(qData.q38, OPTIONS.canadaProvince)
+      : choiceFromTable(qData.q39, OPTIONS.usaProvince);
 
     // -- Flight --
     const flight = {
@@ -402,11 +388,11 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     // heatingType, and the heating what-if toggle later updates only
     // heatingType — efficiency stays frozen at the respondent's real system.
     const heating = {
-      houseSize: atLeastOne(qData.q15), // square feet
-      householdSize: choiceFromTable(qData.q14, OPTIONS.householdSize),
-      buildingStandard: choiceFromTable(qData.q13, OPTIONS.buildingStandard),
-      heatingType: choiceFromTable(qData.q16, OPTIONS.heatingType),
-      heatingEfficiency: choiceFromTable(qData.q16, OPTIONS.heatingType),
+      houseSize: atLeastOne(qData.q35), // square feet
+      householdSize: choiceFromTable(qData.q34, OPTIONS.householdSize),
+      buildingStandard: choiceFromTable(qData.q33, OPTIONS.buildingStandard),
+      heatingType: choiceFromTable(qData.q36, OPTIONS.heatingType),
+      heatingEfficiency: choiceFromTable(qData.q36, OPTIONS.heatingType),
     };
 
     // -- Vehicle --
@@ -419,12 +405,12 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     if (isFirstChoice(qData.q1)) {
       vehicle.fuelType = choiceFromTable(qData.q2, OPTIONS.fuelType);
       vehicle.vehicleSize = choiceFromTable(qData.q3, OPTIONS.carSize);
-      vehicle.passengers = atLeastOne(qData.q30);
-      vehicle.mileage = parseIntOrZero(isCanada ? qData.q4 : qData.q20);
+      vehicle.passengers = atLeastOne(qData.q6);
+      vehicle.mileage = parseIntOrZero(isCanada ? qData.q4 : qData.q5);
     }
 
     // -- Diet --
-    const diet = { dietType: choiceFromTable(qData.q11, OPTIONS.diet) };
+    const diet = { dietType: choiceFromTable(qData.q32, OPTIONS.diet) };
 
     return { countryName, mileageType, region, flight, heating, vehicle, diet };
   }
