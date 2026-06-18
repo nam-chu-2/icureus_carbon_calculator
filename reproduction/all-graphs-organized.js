@@ -25,14 +25,19 @@
  *
  * Quirks of the original that are deliberately PRESERVED (this file reproduces
  * behavior, it does not fix bugs — see LEARNING-PLAN.md, Phases 3-5):
- *  [Q1] getFuelType returns "PHEV" (uppercase) but the factor table uses
- *       "phev" — PHEV drivers fall through to zero vehicle emissions.
+ *  [Q1] FIXED: the fuel-type option table now returns lowercase "phev",
+ *       matching the factor-table keys, so PHEV drivers get their real
+ *       vehicle emissions. The original returned "PHEV" (uppercase) and those
+ *       drivers fell through to zero.
  *  [Q2] buildingStandard blank key is "" for QC but "blank" elsewhere — a
  *       blank answer outside QC looks up undefined and yields NaN heating.
- *  [Q3] Vehicle emissions are NOT rounded to one decimal (the original's
- *       `.toFixed(1)` binds to the divisor, not the result).
- *  [Q4] heatingEfficiency is set from the same answer as heatingType and is
- *       never updated by the what-if heating toggle.
+ *  [Q3] FIXED: vehicle emissions are now rounded to one decimal like the
+ *       other components. The original's `.toFixed(1)` bound to the divisor,
+ *       not the result, leaving this value unrounded.
+ *  [Q4] FIXED: heating efficiency is now derived from heatingType at
+ *       calculation time (single source of truth), so the what-if heating
+ *       toggle uses the toggled system's real efficiency/COP. The original
+ *       stored a separate heatingEfficiency copy that the toggle never updated.
  * (Only cosmetic difference: the original's initial chart title contained a
  * doubled space after the colon; this version uses one title helper.)
  */
@@ -99,6 +104,11 @@ Qualtrics.SurveyEngine.addOnReady(function () {
 
   // The "what if I took one more long-haul flight?" counterfactual (tonnes)
   const ADDITIONAL_FLIGHT_TONNES = 3.0;
+
+  // Average annual driving distance used by the Avg_Gas_CF counterfactual.
+  // It is a fixed PHYSICAL distance: US respondents see the miles-equivalent
+  // (~10,563 mi), which converts back to this many km. [Avg_Gas_CF]
+  const AVG_GAS_CF_DISTANCE_KM = 17000;
 
   // Unit conversions
   const SQFT_PER_SQM = 10.7639; // survey collects house size in square feet
@@ -189,8 +199,8 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * Combustion factors (petrol/diesel/hybrid) are identical in every region;
    * only the grid-dependent rows (phev/battery) vary, because those vehicles
    * charge from the local grid. [P3] The shared rows are defined once.
-   * [Q1] PRESERVED QUIRK: keys are lowercase "phev" but the parser returns
-   * "PHEV", so PHEV drivers hit the zero fallback in the calculation.
+   * [Q1 FIXED] Keys are lowercase "phev" and the parser now returns "phev"
+   * too, so PHEV drivers map to these factors instead of the zero fallback.
    */
   const COMBUSTION_VEHICLE_FACTORS = {
     petrol: { truck: 0.315, car: 0.215, suv: 0.315 },
@@ -256,11 +266,11 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   const OPTIONS = {
     buildingStandard: ["", "old", "mid", "new"],
     heatingType: ["", "oil", "gas", "hydro", "heatpump", "wood", "unknown"], // wood=5, unknown=6
-    fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"], // [Q1]
+    fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"], // [Q1 FIXED] lowercase "phev" matches factor table
     carSize: ["", "car", "truck", "suv"],
     diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
     canadaProvince: ["", "ON", "QC", "AB", "BC"],
-    usaProvince: ["", "WA", "CO", "MI", "NY"],
+    usaState: ["", "WA", "CO", "MI", "NY"],
     householdSize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // blank -> 1 person
   };
 
@@ -359,7 +369,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     const mileageType = isCanada ? "KM" : "MILES";
     const region = isCanada
       ? choiceFromTable(qData.q38, OPTIONS.canadaProvince)
-      : choiceFromTable(qData.q39, OPTIONS.usaProvince);
+      : choiceFromTable(qData.q39, OPTIONS.usaState);
 
     // -- Flight --
     const flight = {
@@ -384,15 +394,16 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     }
 
     // -- Heating --
-    // [Q4] PRESERVED QUIRK: heatingEfficiency comes from the same answer as
-    // heatingType, and the heating what-if toggle later updates only
-    // heatingType — efficiency stays frozen at the respondent's real system.
+    // [Q4 FIXED] Single source of truth: only heatingType is stored. Efficiency
+    // is derived from heatingType at calculation time, so the two can never
+    // drift. (The original stored a separate heatingEfficiency copy and the
+    // what-if toggle updated only heatingType, leaving efficiency frozen at the
+    // respondent's real system.)
     const heating = {
       houseSize: atLeastOne(qData.q35), // square feet
       householdSize: choiceFromTable(qData.q34, OPTIONS.householdSize),
       buildingStandard: choiceFromTable(qData.q33, OPTIONS.buildingStandard),
       heatingType: choiceFromTable(qData.q36, OPTIONS.heatingType),
-      heatingEfficiency: choiceFromTable(qData.q36, OPTIONS.heatingType),
     };
 
     // -- Vehicle --
@@ -458,7 +469,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     const tonnes =
       ((houseSizeSqm *
         BUILDING_STANDARD_BY_REGION[region][heating.buildingStandard] * // [Q2]
-        (factor / HEATING_EFFICIENCY[heating.heatingEfficiency])) /
+        (factor / HEATING_EFFICIENCY[heating.heatingType])) / // [Q4] efficiency derived from type
         KG_PER_TONNE) /
       heating.householdSize;
 
@@ -474,17 +485,20 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       mileageKm = mileageKm * KM_PER_MILE; // US answers are miles -> convert
     }
 
-    // Unknown fuel ("novehicle", "PHEV" [Q1]) falls back to zero factors.
+    // Respondents with no car access have fuelType "novehicle", which isn't in
+    // the factor table, so they fall back to zero factors. [Q1] PHEV is no
+    // longer affected — it now maps to its real factors.
     const regionFactors = VEHICLE_FACTOR_BY_REGION[state.region];
     const fuelFactors =
       regionFactors[vehicle.fuelType] || { car: 0, truck: 0, suv: 0 };
     const tonnesPerKm = fuelFactors[vehicle.vehicleSize] / KG_PER_TONNE;
 
-    // [Q3] PRESERVED QUIRK: the original wrote
+    // [Q3 FIXED] Round the RESULT to one decimal, consistent with the other
+    // three components. The original wrote
     //   (factor * mileage) / passengerSize.toFixed(1)
-    // — .toFixed(1) rounds the DIVISOR (a no-op for whole passengers), not
-    // the result. So unlike the other components, this value is unrounded.
-    return Number((tonnesPerKm * mileageKm) / vehicle.passengers);
+    // where .toFixed(1) bound to the DIVISOR (a no-op for whole passengers),
+    // leaving this value unrounded.
+    return Number(((tonnesPerKm * mileageKm) / vehicle.passengers).toFixed(1));
   }
 
   // Diet = direct per-person annual factor
@@ -523,6 +537,63 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       calculateDietEmissions(state) +
       ADDITIONAL_FLIGHT_TONNES;
     return Math.ceil(counterfactualTotal + Y_AXIS_HEADROOM_TONNES);
+  }
+
+  /* =========================================================================
+   * 7B. COUNTERFACTUALS  [P3, P4: state in, tonnes CO2e out — no globals]
+   * -------------------------------------------------------------------------
+   * "What if?" scenarios written to embedded data for DOWNSTREAM survey pages
+   * (the live chart toggles in section 9 are a separate, on-page mechanism).
+   * Each clones the survey state with one field swapped and reuses the matching
+   * calculator from section 7 — so they share its factors, region logic, and
+   * rounding instead of re-deriving them (the original copy-pasted the vehicle
+   * and heating math into each function). [P3]
+   * ========================================================================= */
+
+  // Shallow-clone state with one sub-object patched, leaving the original
+  // untouched (the calculators only read state, so a shallow copy is enough).
+  function withPatch(state, key, patch) {
+    return Object.assign({}, state, {
+      [key]: Object.assign({}, state[key], patch),
+    });
+  }
+
+  // EV_CF: what if they drove a battery-electric vehicle? (their real mileage,
+  // size, and passenger count; fuel swapped to battery)
+  function calculateEV_CF(state) {
+    return calculateVehicleEmissions(withPatch(state, "vehicle", { fuelType: "battery" }));
+  }
+
+  // Gas_CF: what if they drove a petrol vehicle? (their real mileage/size/passengers)
+  function calculateGas_CF(state) {
+    return calculateVehicleEmissions(withPatch(state, "vehicle", { fuelType: "petrol" }));
+  }
+
+  // Avg_Gas_CF: what if they drove a petrol car the national-average distance,
+  // solo? The average is a fixed PHYSICAL distance in km. mileageType is forced
+  // to KM so the value is used as-is: a miles round-trip would cancel out and
+  // yield the same km, so the unit is irrelevant to the emissions here.
+  function calculateAvgGas_CF(state) {
+    const cfState = Object.assign(
+      withPatch(state, "vehicle", {
+        fuelType: "petrol",
+        mileage: AVG_GAS_CF_DISTANCE_KM,
+        passengers: 1,
+      }),
+      { mileageType: "KM" }
+    );
+    return calculateVehicleEmissions(cfState);
+  }
+
+  // HeatPump_CF: what if they switched to a heat pump? Only heatingType is
+  // swapped — efficiency follows from it automatically (see [Q4] fix).
+  function calculateHeatPump_CF(state) {
+    return calculateHeatingEmissions(withPatch(state, "heating", { heatingType: "heatpump" }));
+  }
+
+  // Vegan_CF: what if they ate vegan? (independent of their actual diet)
+  function calculateVegan_CF(state) {
+    return calculateDietEmissions(withPatch(state, "diet", { dietType: "vegan" }));
   }
 
   /* =========================================================================
@@ -685,8 +756,9 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         state.flight.additional = value === "additionalflight";
         state.flight.noFlight = value === "noflight";
       },
-      // [Q4] heatingType only — heatingEfficiency intentionally untouched,
-      // matching the original.
+      // [Q4 FIXED] heatingType is the single source of truth; efficiency is
+      // derived from it at calc time, so the counterfactual now uses the
+      // toggled system's real efficiency/COP.
       heatingToggle: function (value) {
         state.heating.heatingType = value;
       },
@@ -707,12 +779,44 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   }
 
   /* =========================================================================
-   * 10. MAIN  [P5: the whole program in five readable lines]
+   * 10. MAIN  [P5: the whole program, told top to bottom]
+   * -------------------------------------------------------------------------
+   * One file now serves both survey roles. The compute + output block runs on
+   * every page: it shows the total in #footprint (replacing the old intro-text
+   * jQuery injection) and writes embedded data for downstream pages. The chart
+   * block runs only where the #myChart canvas exists, so the same script is
+   * harmless on the intro-text page.
+   *
+   * NOTE: setEmbeddedData writes are read by LATER pages. Qualtrics resolves
+   * ${e://Field/...} piped text on the server BEFORE this script runs, so these
+   * values cannot be piped into the SAME page — same-page display must use the
+   * #footprint injection below.
    * ========================================================================= */
   const state = buildSurveyState(qData);
   const emissions = computeEmissions(state);
-  const yAxisMax = calculateYAxisMax(state);
-  const chart = createChart(emissions, yAxisMax);
-  setInitialToggles(state);
-  wireToggles(chart, state, yAxisMax);
+
+  // -- Intro-text role: on-page total + embedded data for downstream pages --
+  if (jQuery("#footprint").length) {
+    jQuery("#footprint").html(emissions.total.toFixed(1) + " t CO<sub>2</sub>");
+  }
+  Qualtrics.SurveyEngine.setEmbeddedData("Flights", emissions.flight.toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Mobility", emissions.vehicle.toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Diet", emissions.diet.toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Heat", emissions.heating.toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("GHG_Total", emissions.total.toFixed(1));
+
+  // Counterfactuals (downstream pages pipe these)
+  Qualtrics.SurveyEngine.setEmbeddedData("EV_CF", calculateEV_CF(state).toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Gas_CF", calculateGas_CF(state).toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Avg_Gas_CF", calculateAvgGas_CF(state).toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("HeatPump_CF", calculateHeatPump_CF(state).toFixed(1));
+  Qualtrics.SurveyEngine.setEmbeddedData("Vegan_CF", calculateVegan_CF(state).toFixed(1));
+
+  // -- Chart role: only on the page that has the canvas --
+  if (document.getElementById("myChart")) {
+    const yAxisMax = calculateYAxisMax(state);
+    const chart = createChart(emissions, yAxisMax);
+    setInitialToggles(state);
+    wireToggles(chart, state, yAxisMax);
+  }
 });
