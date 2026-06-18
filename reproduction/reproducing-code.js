@@ -135,36 +135,43 @@ const BUILDING_STANDARD_BY_REGION = {
 };
 
 const COMBUSTION = {
-    petrol : {car: 0.215, truck: 0.315, suv: 0.315}, 
+    petrol : {car: 0.215, truck: 0.315, suv: 0.315},
     diesel : {car: 0.181, truck: 0.266, suv: 0.266},
     hybrid : {car: 0.144, truck: 0.219, suv: 0.219},
 };
 
+// Object.assign instead of object spread {...COMBUSTION}: Qualtrics' JS editor
+// rejects the ES2018 spread syntax, so the shared combustion rows are merged
+// with each region's grid-dependent rows (phev/battery) this way instead.
+function regionVehicleFactors(gridDependentRows) {
+    return Object.assign({}, COMBUSTION, gridDependentRows);
+}
+
 const VEHICLE_FACTOR_BY_REGION = {
-    WA: {...COMBUSTION, 
-        phev: {car: 0.086, truck: 0.128, suv: 0.128}, 
-        battery: {car: 0.05, truck: 0.081, suv: 0.081}},
-    CO: {...COMBUSTION, 
+    WA: regionVehicleFactors({
         phev: {car: 0.086, truck: 0.128, suv: 0.128},
-        battery: {car: 0.05, truck: 0.081, suv: 0.081}},
-    MI: {...COMBUSTION,
+        battery: {car: 0.05, truck: 0.081, suv: 0.081}}),
+    CO: regionVehicleFactors({
+        phev: {car: 0.086, truck: 0.128, suv: 0.128},
+        battery: {car: 0.05, truck: 0.081, suv: 0.081}}),
+    MI: regionVehicleFactors({
         phev: {car: 0.098, truck: 0.144, suv: 0.144},
-        battery: {car: 0.077, truck: 0.124, suv: 0.124}},
-    NY: {...COMBUSTION, 
-        phev: {car: 0.081, truck: 0.122, suv: 0.122}, 
-        battery: {car: 0.04, truck: 0.064, suv: 0.064}},
-    BC: {...COMBUSTION, 
+        battery: {car: 0.077, truck: 0.124, suv: 0.124}}),
+    NY: regionVehicleFactors({
         phev: {car: 0.081, truck: 0.122, suv: 0.122},
-        battery: {car: 0.04, truck: 0.065, suv: 0.065}},
-    AB: {...COMBUSTION,
+        battery: {car: 0.04, truck: 0.064, suv: 0.064}}),
+    BC: regionVehicleFactors({
+        phev: {car: 0.081, truck: 0.122, suv: 0.122},
+        battery: {car: 0.04, truck: 0.065, suv: 0.065}}),
+    AB: regionVehicleFactors({
         phev: {car: 0.086, truck: 0.128, suv: 0.128},
-        battery: {car: 0.05, truck: 0.08, suv: 0.08}},
-    ON: {...COMBUSTION,
+        battery: {car: 0.05, truck: 0.08, suv: 0.08}}),
+    ON: regionVehicleFactors({
         phev: {car: 0.081, truck: 0.122, suv: 0.122},
-        battery: {car: 0.04, truck: 0.065, suv: 0.065}},
-    QC: {...COMBUSTION, 
-        phev: {car: 0.081, truck: 0.122, suv: 0.122}, 
-        battery: {car: 0.04, truck: 0.064, suv: 0.064}},
+        battery: {car: 0.04, truck: 0.065, suv: 0.065}}),
+    QC: regionVehicleFactors({
+        phev: {car: 0.081, truck: 0.122, suv: 0.122},
+        battery: {car: 0.04, truck: 0.064, suv: 0.064}}),
 };
 
 /* =========================================================================
