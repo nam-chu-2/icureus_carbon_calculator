@@ -1,0 +1,93 @@
+<style>
+  .ghg-row {
+    display: flex;
+    flex-wrap: wrap;       /* stacks the columns when the page gets narrow */
+    align-items: center;   /* vertically centers the toggles beside the chart */
+    gap: 24px;
+  }
+  .ghg-chart    { flex: 1 1 58%; min-width: 300px; }
+  .ghg-controls { flex: 1 1 38%; min-width: 240px; }
+  .ghg-controls .radio-group { text-align: left; margin-bottom: 10px; }
+
+  @media (max-width: 600px) {            /* mobile: stack instead of squeeze */
+    .ghg-chart, .ghg-controls { flex-basis: 100%; }
+  }
+</style>
+
+<div class="ghg-row">
+  <div class="ghg-chart">
+    <canvas height="400" id="myChart" width="600">&nbsp;</canvas>
+  </div>
+
+  <div class="ghg-controls">
+    <div class="radio-group">
+      <strong style="margin-right: 10px">Flight:</strong>
+      <label>
+        <input
+          checked="checked"
+          name="flightToggle"
+          type="radio"
+          value="currentflight"
+        />
+        Current Flights
+      </label>
+      <label>
+        <input name="flightToggle" type="radio" value="additionalflight" />
+        Additional Long Haul Flights
+      </label>
+      <label>
+        <input name="flightToggle" type="radio" value="noflight" /> No Flights
+      </label>
+    </div>
+
+    <div class="radio-group">
+      <strong style="margin-right: 10px">Heating:</strong>
+      <label>
+        <input name="heatingToggle" type="radio" value="oil" /> Heating-Oil
+      </label>
+      <label>
+        <input name="heatingToggle" type="radio" value="gas" /> Natural-Gas
+      </label>
+      <label>
+        <input name="heatingToggle" type="radio" value="hydro" /> Electric
+      </label>
+      <label> <input name="heatingToggle" type="radio" value="wood" /> Wood </label>
+      <label>
+        <input name="heatingToggle" type="radio" value="heatpump" /> Heat-Pump
+      </label>
+    </div>
+
+    <div class="radio-group">
+      <strong style="margin-right: 10px">Vehicle:</strong>
+      <label>
+        <input name="vehicleToggle" type="radio" value="petrol" /> Gas
+      </label>
+      <label>
+        <input name="vehicleToggle" type="radio" value="hybrid" /> Hybrid
+      </label>
+      <label>
+        <input name="vehicleToggle" type="radio" value="battery" /> Electric
+      </label>
+      <label>
+        <input name="vehicleToggle" type="radio" value="phev" /> Plug-in hybrid
+      </label>
+      <label>
+        <input name="vehicleToggle" type="radio" value="novehicle" /> No Vehicle
+      </label>
+    </div>
+
+    <div class="radio-group">
+      <strong style="margin-right: 10px">Diet:</strong>
+      <label>
+        <input name="dietToggle" type="radio" value="omnivore" /> Omnivore
+      </label>
+      <label>
+        <input name="dietToggle" type="radio" value="flexitarian" /> Flexitarian
+      </label>
+      <label>
+        <input name="dietToggle" type="radio" value="vegetarian" /> Vegetarian
+      </label>
+      <label> <input name="dietToggle" type="radio" value="vegan" /> Vegan </label>
+    </div>
+  </div>
+</div>

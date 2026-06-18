@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>TEST-PLAN.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="carbon-calculator--test-plan-template">Carbon Calculator — Test Plan Template</h1>
+<p>A template of all the test cases worth running against the calculator
+(<code>reproducing-code.js</code> / <code>all-graphs-organized.js</code>). Built around <strong>equivalence
+classes and boundaries</strong> rather than every literal combination (8 regions × 5
+fuels × 3 sizes × … is too many to enumerate), so each row exercises one
+distinct code path.</p>
+<h2 id="how-to-use-this">How to use this</h2>
+<ol>
+<li>Pick the inputs for a row, set them as <code>qData</code> values (locally) or answer the
+matching questions in a Qualtrics preview.</li>
+<li>Read the result. The code already logs it — open the browser console and look
+for the <code>*********G_FlightChartValue, …</code> line (the four components + total)
+and the <code>*********G_SurveySettings:</code> state dump.</li>
+<li>Fill in <strong>Actual</strong> and mark <strong>✅/❌</strong>. For a fail, note the component that's off.</li>
+<li>When the questionnaire changes, add rows (see <em>Extensibility</em> at the bottom).</li>
+</ol>
+<blockquote>
+<p>Tip: the four component logs are your oracle. If a <strong>total</strong> looks wrong but
+every component is right, suspect the round-then-sum step, not the inputs.</p>
+</blockquote>
+<hr>
+<h2 id="input-legend-qualtrics-recode-%E2%86%92-label">Input legend (Qualtrics recode → label)</h2>
+<table>
+<thead>
+<tr>
+<th>qData</th>
+<th>Question</th>
+<th>Recode → value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>q1</code></td>
+<td>Car access</td>
+<td>1=Yes, 2=No</td>
+</tr>
+<tr>
+<td><code>q2</code></td>
+<td>Fuel type</td>
+<td>1=petrol(gas), 2=diesel, 3=hybrid, 4=<strong>phev</strong>, 5=battery(electric)</td>
+</tr>
+<tr>
+<td><code>q3</code></td>
+<td>Car size</td>
+<td>1=car, 2=truck, 3=suv</td>
+</tr>
+<tr>
+<td><code>q4</code>/<code>q5</code></td>
+<td>Distance</td>
+<td>km (Canada) / miles (USA), numeric text</td>
+</tr>
+<tr>
+<td><code>q6</code></td>
+<td>Passengers</td>
+<td>numeric text (clamped to ≥1)</td>
+</tr>
+<tr>
+<td><code>q7</code></td>
+<td>Will fly?</td>
+<td>1=Yes, 2=No</td>
+</tr>
+<tr>
+<td><code>q8</code>–<code>q31</code></td>
+<td>Flight counts</td>
+<td>numeric text, per region × haul</td>
+</tr>
+<tr>
+<td><code>q32</code></td>
+<td>Diet</td>
+<td>1=omnivore, 2=flexitarian, 3=vegetarian, 4=vegan</td>
+</tr>
+<tr>
+<td><code>q33</code></td>
+<td>Building age</td>
+<td>1=old(&lt;1960), 2=mid(1960–83), 3=new(&gt;83), blank=&quot;&quot;</td>
+</tr>
+<tr>
+<td><code>q34</code></td>
+<td>Household size</td>
+<td>1–10</td>
+</tr>
+<tr>
+<td><code>q35</code></td>
+<td>House size</td>
+<td>sqft, numeric text (clamped to ≥1)</td>
+</tr>
+<tr>
+<td><code>q36</code></td>
+<td>Heating</td>
+<td>1=oil, 2=gas, 3=<strong>hydro</strong>(electric), 4=heatpump, 5=wood, 6=unknown</td>
+</tr>
+<tr>
+<td><code>q37</code></td>
+<td>Country</td>
+<td>1=Canada, 2=USA</td>
+</tr>
+<tr>
+<td><code>q38</code></td>
+<td>Province</td>
+<td>1=ON, 2=QC, 3=AB, 4=BC</td>
+</tr>
+<tr>
+<td><code>q39</code></td>
+<td>State</td>
+<td>1=WA, 2=CO, 3=MI, 4=NY</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Region drives a lot:</strong> flight question routing, grid intensity (hydro/heatpump
+heating + phev/battery vehicles), and building-standard table all key off region.</p>
+<hr>
+<h2 id="a-smoke-tests-happy-path-full-profile">A. Smoke tests (happy path, full profile)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1</td>
+<td>Canada / ON, omnivore, gas car, flies, gas heat</td>
+<td>q37=1,q38=1,q1=1,q2=1,q3=1,q4=15000,q6=1,q7=1,q8=2,q16=1,q24=0,q32=1,q33=1,q34=1,q35=1000,q36=2</td>
+<td>All 4 components &gt; 0, total = their rounded sum</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>A2</td>
+<td>USA / NY, vegan, no car, no flights, electric heat</td>
+<td>q37=2,q39=4,q1=2,q7=2,q32=4,q33=3,q34=2,q35=1500,q36=3</td>
+<td>vehicle=0, flight=0, diet=0.5, heat region-scaled by NY grid</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="b-country--region-routing">B. Country &amp; region routing</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1</td>
+<td>Canada → uses q4 (km), q38</td>
+<td>q37=1,q38=2</td>
+<td>region=QC, mileage read from q4</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>B2</td>
+<td>USA → uses q5 (miles), q39</td>
+<td>q37=2,q39=1</td>
+<td>region=WA, mileage read from q5, ×1.60934 applied</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>B3</td>
+<td>Each Canada province</td>
+<td>q38 = 1,2,3,4</td>
+<td>region = ON/QC/AB/BC respectively</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>B4</td>
+<td>Each USA state</td>
+<td>q39 = 1,2,3,4</td>
+<td>region = WA/CO/MI/NY respectively</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>B5</td>
+<td>Blank country (q37=&quot;&quot;)</td>
+<td>q37=&quot;&quot;</td>
+<td>isCanada=false → treated as USA path</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="c-vehicle-ground-mobility">C. Vehicle (ground mobility)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1</td>
+<td>No car access (gate)</td>
+<td>q1=2</td>
+<td>fuelType=&quot;novehicle&quot; → vehicle=0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C2</td>
+<td>Petrol car</td>
+<td>q1=1,q2=1,q3=1</td>
+<td>uses petrol/car factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C3</td>
+<td>Diesel truck</td>
+<td>q1=1,q2=2,q3=2</td>
+<td>uses diesel/truck factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C4</td>
+<td>Hybrid suv</td>
+<td>q1=1,q2=3,q3=3</td>
+<td>uses hybrid/suv factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C5</td>
+<td><strong>PHEV [Q1]</strong></td>
+<td>q1=1,q2=4,q3=1</td>
+<td>non-zero (maps to lowercase &quot;phev&quot;) — regression guard</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C6</td>
+<td>Battery (EV)</td>
+<td>q1=1,q2=5,q3=1</td>
+<td>uses region battery factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C7</td>
+<td>Miles conversion (USA)</td>
+<td>q37=2,q39=1,q1=1,q2=1,q5=10000</td>
+<td>mileage treated as ×1.60934 km</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C8</td>
+<td>Passengers divide</td>
+<td>q6=4</td>
+<td>emissions = single-occupant / 4</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C9</td>
+<td>Passengers blank/0</td>
+<td>q6=&quot;&quot; or q6=0</td>
+<td>clamped to 1 (no divide-by-zero)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C10</td>
+<td>Zero mileage</td>
+<td>q1=1,q4=0</td>
+<td>vehicle=0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>C11</td>
+<td><strong>Rounding [Q3]</strong></td>
+<td>any driver</td>
+<td>result rounded to 1 decimal</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="d-flight">D. Flight</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td>No fly (gate)</td>
+<td>q7=2</td>
+<td>flight=0, flownStatus=false</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D2</td>
+<td>Short haul only</td>
+<td>q7=1, region=ON, q8=3</td>
+<td>3 × short factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Medium haul only</td>
+<td>q7=1, region=ON, q16=2</td>
+<td>2 × medium factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Long haul only</td>
+<td>q7=1, region=ON, q24=1</td>
+<td>1 × long factor (2.991917)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D5</td>
+<td>Region routing — short</td>
+<td>q7=1, region=QC, q9=1</td>
+<td>reads <strong>q9</strong> not q8</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D6</td>
+<td>Region routing — long (note swapped q25/q26)</td>
+<td>q7=1, region=AB, q25=1</td>
+<td>AB long = <strong>q25</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D7</td>
+<td>All hauls combined</td>
+<td>q7=1, q8=1,q16=1,q24=1</td>
+<td>sum of all three factors</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D8</td>
+<td>Blank flight counts</td>
+<td>q7=1, q8=&quot;&quot;</td>
+<td>parses to 0</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="e-heating">E. Heating</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1</td>
+<td>Oil</td>
+<td>q36=1</td>
+<td>uses oil factor/efficiency</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E2</td>
+<td>Gas</td>
+<td>q36=2</td>
+<td>uses gas factor/efficiency</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E3</td>
+<td>Electric (hydro) — region grid</td>
+<td>q36=3, region=QC vs AB</td>
+<td>QC ≈ near-zero (grid 0.472), AB high (136)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E4</td>
+<td>Heat pump — region grid + COP</td>
+<td>q36=4</td>
+<td>factor=grid intensity, efficiency=2.74</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E5</td>
+<td>Wood</td>
+<td>q36=5</td>
+<td>near-zero factor (0.001)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E6</td>
+<td>Unknown</td>
+<td>q36=6</td>
+<td>defaults to gas factor (50.149), eff 0.9</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E7</td>
+<td>Blank heating type</td>
+<td>q36=&quot;&quot;</td>
+<td>defaults to gas factor, eff 0.9</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E8</td>
+<td>Building age old/mid/new</td>
+<td>q33=1/2/3</td>
+<td>scales by region's old/mid/new</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E9</td>
+<td><strong>Blank building age in QC</strong></td>
+<td>q38=2,q33=&quot;&quot;</td>
+<td>works → uses &quot;&quot; key (0.56)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E10</td>
+<td><strong>Blank building age outside QC [Q2]</strong></td>
+<td>q38=1,q33=&quot;&quot;</td>
+<td><strong>NaN heating → NaN total</strong> (preserved quirk!)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E11</td>
+<td>Household divide</td>
+<td>q34=4</td>
+<td>per-person = total / 4</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E12</td>
+<td>Household blank</td>
+<td>q34=&quot;&quot;</td>
+<td>clamped to 1</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E13</td>
+<td>House size scaling</td>
+<td>q35=2000 vs 1000</td>
+<td>roughly 2× heating</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>E14</td>
+<td>House size blank</td>
+<td>q35=&quot;&quot;</td>
+<td>clamped to 1 sqft</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="f-diet">F. Diet</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Key inputs</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>Omnivore</td>
+<td>q32=1</td>
+<td>1.6279 → 1.6</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>F2</td>
+<td>Flexitarian</td>
+<td>q32=2</td>
+<td>1.23735 → 1.2</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Vegetarian</td>
+<td>q32=3</td>
+<td>0.8468 → 0.8</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>F4</td>
+<td>Vegan</td>
+<td>q32=4</td>
+<td>0.5037 → 0.5</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>F5</td>
+<td>Blank diet</td>
+<td>q32=&quot;&quot;</td>
+<td>defaults to omnivore (1.6) — needs <code>&quot;&quot;</code> key</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="g-rounding--total">G. Rounding &amp; total</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G1</td>
+<td>Each component rounded to 1 dp before summing</td>
+<td>components shown to 1 dp</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Total = round(sum of pre-rounded components)</td>
+<td>round-then-sum-then-round</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>G3</td>
+<td>A whole value formats with trailing .0 in embedded data</td>
+<td>e.g. &quot;3.0&quot; not &quot;3&quot;</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="h-counterfactuals-embedded-data">H. Counterfactuals (embedded data)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Field</th>
+<th>Definition</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H1</td>
+<td><code>EV_CF</code></td>
+<td>their drive, swapped to battery</td>
+<td>≤ Gas_CF; 0 if no vehicle</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>H2</td>
+<td><code>Gas_CF</code></td>
+<td>their drive, swapped to petrol</td>
+<td>≥ EV_CF; 0 if no vehicle</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>H3</td>
+<td><code>Avg_Gas_CF</code></td>
+<td>petrol, 17,000 km, solo</td>
+<td><strong>non-zero even for non-drivers</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>H4</td>
+<td><code>HeatPump_CF</code></td>
+<td>their home, swapped to heat pump</td>
+<td>uses grid + 2.74 COP</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>H5</td>
+<td><code>Vegan_CF</code></td>
+<td>vegan regardless of diet</td>
+<td>always 0.5</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>H6</td>
+<td>Avg_Gas_CF unit independence</td>
+<td>same tonnes for CA(km) and US(miles) respondents</td>
+<td>identical</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="i-interactive-toggles-chart-page">I. Interactive toggles (chart page)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Toggle</th>
+<th>Action</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I1</td>
+<td>flight</td>
+<td>&quot;current&quot;</td>
+<td>uses real flight value</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I2</td>
+<td>flight</td>
+<td>&quot;additional&quot;</td>
+<td>+3 t (one long-haul)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I3</td>
+<td>flight</td>
+<td>&quot;noflight&quot;</td>
+<td>flight bar → 0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I4</td>
+<td>heating</td>
+<td>switch oil → heatpump</td>
+<td><strong>efficiency follows type [Q4]</strong> (uses 2.74, not old eff)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I5</td>
+<td>vehicle</td>
+<td>switch to battery</td>
+<td>bar drops to EV factor</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I6</td>
+<td>diet</td>
+<td>switch to vegan</td>
+<td>diet bar → 0.5</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I7</td>
+<td>y-axis</td>
+<td>toggle any</td>
+<td>max stays frozen (set at load incl. +flight headroom)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>I8</td>
+<td>total title</td>
+<td>any toggle</td>
+<td>title total updates to new sum</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="j-embedded-data-write-out-verify-all-10-fields-populate">J. Embedded data write-out (verify all 10 fields populate)</h2>
+<p><code>Flights</code>, <code>Mobility</code>, <code>Diet</code>, <code>Heat</code>, <code>GHG_Total</code>, <code>EV_CF</code>, <code>Gas_CF</code>,
+<code>Avg_Gas_CF</code>, <code>HeatPump_CF</code>, <code>Vegan_CF</code>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Check</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J1</td>
+<td>All 10 set on the run page</td>
+<td>non-empty, 1-decimal strings</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>J2</td>
+<td>Available to a <strong>later</strong> page (pipe <code>${e://Field/GHG_Total}</code>)</td>
+<td>renders the value</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>J3</td>
+<td>NOT piped on the same page</td>
+<td>(won't work — server resolves before JS)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>J4</td>
+<td><code>#footprint</code> shows total on intro page</td>
+<td>&quot;X.X t CO₂&quot; injected</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="k-cross-cutting-edge-cases">K. Cross-cutting edge cases</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Expected</th>
+<th>Actual</th>
+<th>✅/❌</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K1</td>
+<td>Everything blank / unanswered</td>
+<td>no crash; diet→omnivore, sizes→1; <strong>but [Q2] NaN if non-QC + blank q33</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>K2</td>
+<td>All max values (10+ flights, big house, 30k km)</td>
+<td>large but finite total</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>K3</td>
+<td>Non-driver but flies a lot</td>
+<td>vehicle=0, flight large</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>K4</td>
+<td>Driver but no flights</td>
+<td>flight=0, vehicle large</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>K5</td>
+<td>Multi-select recode (e.g. &quot;1,3&quot;) into a single-choice field</td>
+<td>reads first / array — confirm intended</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="extensibility--when-the-questionnaire-changes">Extensibility — when the questionnaire changes</h2>
+<p>For each addition, update the code <strong>and</strong> add the matching test rows:</p>
+<ul>
+<li><strong>New region (province/state):</strong> add to <code>GRID_INTENSITY</code>, <code>BUILDING_STANDARD_BY_REGION</code>,
+<code>VEHICLE_FACTOR_BY_REGION</code>, the three <code>*_HAUL_QUESTION_BY_REGION</code> maps, and
+<code>OPTIONS.canadaProvince</code>/<code>usaState</code>. → add B-, D5/D6-, E3/E4-style rows.</li>
+<li><strong>New fuel type:</strong> add to <code>OPTIONS.fuelType</code> (lowercase!) and every region in
+<code>VEHICLE_FACTOR_BY_REGION</code>. → add a C-row + an EV/Gas-style CF check.</li>
+<li><strong>New diet:</strong> add to <code>OPTIONS.diet</code> and <code>DIET_FACTOR_TONNES</code>. → add an F-row.</li>
+<li><strong>New heating type:</strong> add to <code>OPTIONS.heatingType</code>, <code>HEATING_FACTOR</code>,
+<code>HEATING_EFFICIENCY</code>, and the <code>knownHeating</code> toggle list. → add an E-row + I4-style toggle.</li>
+<li><strong>New haul/flight question:</strong> extend the <code>*_HAUL_QUESTION_BY_REGION</code> map and
+<code>FLIGHT_FACTOR_TONNES</code>. → add a D-row.</li>
+<li><strong>New embedded-data / counterfactual:</strong> add a calc fn + <code>setEmbeddedData</code> call.
+→ add an H-row + J-row.</li>
+</ul>
+<p><strong>Regression guards to keep green:</strong> C5 (Q1/phev), C11 &amp; G1–G2 (Q3 rounding),
+I4 (Q4 efficiency-follows-type). <strong>Known-preserved quirk:</strong> E10/K1 (Q2 NaN for
+blank building age outside QC) — decide per release whether to finally fix it.</p>
+
+</body>
+</html>
