@@ -33,7 +33,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
     q23: "${q://QID278/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (BC)
     q24: "${q://QID280/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (NEW YORK)
     q25: "${q://QID282/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (MICHIGAN)
-    q26: "${q://QID284/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (MONTANA)
+    q26: "${q://QID284/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (COLORADO)
     q27: "${q://QID286/ChoiceTextEntryValue}", // How many short-haul flights do you expect to take in 2025? (WASHINGTON)
     q28: "${q://QID288/ChoiceTextEntryValue}", // How many medium-haul flights do you expect to take in 2025? (USA)
     q29: "${q://QID290/ChoiceTextEntryValue}", // How many long-haul flights do you expect to take in 2025? (USA)
@@ -46,7 +46,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
    * -----------------------------------------
    */
   let G_ChartObj;
-  let G_GlobalAverage = 6.5;
+  let G_GlobalAverage = 3.8;
   let G_SustainableTarget = 2.5;
   let G_SurveySettings = {
     flight: {
@@ -215,7 +215,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
 
   function getUSAProvince(val) {
     // 1-based index (1,2,3,4)
-    let size = ["", "WA", "MT", "MI", "NY"];
+    let size = ["", "WA", "CO", "MI", "NY"];
     let choice = extractSelectedChoices(val);
     return size[choice];
   }
@@ -245,12 +245,12 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       ON: 10.556, 
       QC: 0.472,
       WA: 36.791,
-      MT: 142.000,
+      CO: 142.000,
       MI: 114.910,
       NY: 65.771
     },
     // hydro (should be labeled electric) varies by province: 
-    // BC	AB	ON	QC	WA	MT	MI	NY
+    // BC	AB	ON	QC	WA	CO	MI	NY
     // 4.167	136.111	10.556	0.472	36.791	142.000	114.910	65.771
     heatpump: {
       BC: 4.167,
@@ -258,7 +258,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       ON: 10.556, 
       QC: 0.472,
       WA: 36.791,
-      MT: 142.000,
+      CO: 142.000,
       MI: 114.910,
       NY: 65.771
     },
@@ -278,7 +278,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
 
 
 /* VH: we need to update buildingStandardWeight with province and state-specific weights, also allow for blank responses, as follows:
-	    QC	(ON/NY/MI/MT)	AB	(BC/WA)
+	    QC	(ON/NY/MI/CO)	AB	(BC/WA)
 old:	  0.62	0.62	0.76	0.57
 mid:	  0.55	0.54	0.74	0.53
 new:	  0.52	0.46	0.61	0.49
@@ -309,7 +309,7 @@ blank:  0.56	0.54	0.70	0.58
       new: 0.46,
       blank: 0.54
     },
-    MT: {
+    CO: {
       old: 0.62,
       mid: 0.54,
       new: 0.46,
@@ -345,7 +345,7 @@ blank:  0.56	0.54	0.70	0.58
     battery: { truck: 0.081, car: 0.050, suv: 0.081 },
   },
 
-  MT: {
+  CO: {
     petrol:  { truck: 0.315, car: 0.215, suv: 0.315 },
     diesel:  { truck: 0.266, car: 0.181, suv: 0.266 },
     hybrid:  { truck: 0.219, car: 0.144, suv: 0.219 },
@@ -613,7 +613,7 @@ blank:  0.56	0.54	0.70	0.58
         G_SurveySettings.flight.short.personal = parseIntOrZero(qData.q24);
       } else if (G_GetProvince === "MI") {
         G_SurveySettings.flight.short.personal = parseIntOrZero(qData.q25);
-      } else if (G_GetProvince === "MT") {
+      } else if (G_GetProvince === "CO") {
         G_SurveySettings.flight.short.personal = parseIntOrZero(qData.q26);
       } else if (G_GetProvince === "WA") {
         G_SurveySettings.flight.short.personal = parseIntOrZero(qData.q27);
