@@ -55,9 +55,10 @@ const qData = {
     q37: "${q://QID262/SelectedChoicesRecode}", // What is your country: {Canada: 1, USA: 2}
     q38: "${q://QID1720071882/SelectedChoicesRecode}", // Which province? {Ontario: 1, Quebec: 2, Alberta: 3, British Columbia: 4}
     q39: "${q://QID1720071883/SelectedChoicesRecode}", // Which state? {Washington: 1, Colorado: 2, Michigan: 3, New York: 4}
-    q40: "${q://QID384/ChoiceGroup/SelectedChoices}", // Which describes your primary residence {Apartment:1, Semi-detached: 2, detached: 3}
-    q41: "${q://QID385/ChoiceGroup/SelectedChoices}", // Energy source for heating water: {Natural gas: 1, Electric: 2}
-    q42: "${q://QID386/ChoiceGroup/SelectedChoices}", // AC: {Yes: 1, No: 2}
+    q40: "${q://QID384/SelectedChoicesRecode}", // Which of the following best describes your primary residence: {Apartment: 1, Semi-detached: 2, Detached: 3}
+    q41: "${q://QID385/SelectedChoicesRecode}",  // Have windows or insulation been significantly upgraded since the home was built? {Yes: 1, No: 2, Unsure: 3}
+    q42: "${q://QID387/SelectedChoicesRecode}", // Energy source for heating water: {Natural gas: 1, Electric: 2, Don't know: 3}
+    q43: "${q://QID386/SelectedChoicesRecode}", // AC: {Yes: 1, No: 2},
 }; console.log(qData)
 // Constants
 
@@ -90,51 +91,121 @@ const FLIGHT_FACTOR_TONNES = {
     default: 0,
 };
 
-const GRID_INTENSITY = {
-    BC: 4.167,
-    AB: 136.111,
-    ON: 10.556,
-    QC: 0.472,
-    WA: 36.791,
-    CO: 142.0,
-    MI: 114.91,
-    NY: 65.771,
+/* =========================================================================
+ * RESIDENTIAL ENERGY MODEL  [ported verbatim from CO2_footprint_calculator.xlsx]
+ * -------------------------------------------------------------------------
+ * Home energy = Space heating + Water heating + Air conditioning + Other
+ * electricity, computed per household (kg CO2e/yr) then divided by household
+ * size for a per-person figure. All constants are the exact Excel values;
+ * keyed tables mirror the workbook's "REGION|vintage" / "REGION|dwelling" keys.
+ * ========================================================================= */
+
+// Electricity grid factor, lifecycle (combustion + upstream), kg CO2e/GJ
+// delivered. Already kg/GJ — no g/kWh conversion. [P_EF_Elec col F]
+const GRID_LIFECYCLE_KG_PER_GJ = {
+    QC: 0.6722226,
+    ON: 13.955564,
+    AB: 158.81122,
+    BC: 5.466670,
+    CO: 159.478634,
+    MI: 123.364129,
+    NY: 76.170706,
+    WA: 41.748111,
 };
 
-const HEATING_FACTOR = {
-    oil: 70.271,
-    gas: 50.149,
-    hydro: GRID_INTENSITY,
-    heatpump: GRID_INTENSITY,
-    wood: 0.001,
-    unknown: 50.149,
-    "": 50.149,
+// Gas-furnace seasonal efficiency, province/state-specific. [P_GasEff]
+const GAS_EFFICIENCY = {
+    QC: 0.88, ON: 0.89, AB: 0.87, BC: 0.87,
+    CO: 0.85, MI: 0.85, NY: 0.85, WA: 0.85,
 };
 
-const HEATING_EFFICIENCY = {
-    oil: 0.81,
-    gas: 0.8725,
-    hydro: 1.0,
-    heatpump: 2.74,
-    wood: 0.78,
-    unknown: 0.9,
-    "": 0.9,
+// Air-source heat-pump seasonal COP: 1.9 Canada / 2.0 US. [P_HPcop]
+const HEATPUMP_COP = {
+    QC: 1.9, ON: 1.9, AB: 1.9, BC: 1.9,
+    CO: 2.0, MI: 2.0, NY: 2.0, WA: 2.0,
 };
 
-const BUILDING_STANDARD_QC = {old: 0.62, mid: 0.55, new: 0.52, "": 0.56}; // [Q2] QC keys blank as "" (others use "blank")
-const BUILDING_STANDARD_ON = {old: 0.62, mid: 0.54, new: 0.46, blank: 0.54};
-const BUILDING_STANDARD_AB = {old: 0.76, mid: 0.74, new: 0.61, blank: 0.70};
-const BUILDING_STANDARD_BC = {old: 0.57, mid: 0.53, new: 0.49, blank: 0.58};
+// Lifecycle fuel emission factors, kg CO2e/GJ (combustion + upstream). [P_EF_Fuel]
+const FUEL_NG = 63.28;
+const FUEL_OILPROP = 79.8;
+const FUEL_WOOD = 1.1;
 
-const BUILDING_STANDARD_BY_REGION = {
-    QC: BUILDING_STANDARD_QC,
-    ON: BUILDING_STANDARD_ON,
-    AB: BUILDING_STANDARD_AB,
-    BC: BUILDING_STANDARD_BC,
-    WA: BUILDING_STANDARD_BC,
-    MI: BUILDING_STANDARD_ON,
-    CO: BUILDING_STANDARD_ON,
-    NY: BUILDING_STANDARD_ON,
+// Non-region space-heating efficiencies (gas/heatpump are region-specific above).
+const SPACE_EFF_OILPROP = 0.84;
+const SPACE_EFF_ELECTRIC = 1.0;
+const SPACE_EFF_WOOD = 0.65;
+
+// Water-heater efficiency / COP by system. [P_WaterHeat]
+const WATER_EFF = {
+    naturalgas: 0.60,
+    electric: 0.90,
+    oilpropane: 0.59, // used only by the "Don't know" water blend
+    heatpump: 2.5,    // used only by the "Don't know" water blend
+};
+
+// Dwelling-type envelope factor on per-m2 heating & cooling. [P_BuildingType]
+const ENVELOPE_FACTOR = {detached: 1.00, attached: 0.85, apartment: 0.70};
+
+// Space-heating useful demand D (GJ/m2/yr), keyed "REGION|vintage". [P_Heating]
+const SPACE_DEMAND_GJ_PER_M2 = {
+    "QC|pre-1960": 0.85, "QC|1960-1983": 0.65, "QC|1984-1999": 0.45, "QC|2000+": 0.34,
+    "ON|pre-1960": 0.85, "ON|1960-1983": 0.55, "ON|1984-1999": 0.40, "ON|2000+": 0.33,
+    "AB|pre-1960": 0.90, "AB|1960-1983": 0.65, "AB|1984-1999": 0.45, "AB|2000+": 0.36,
+    "BC|pre-1960": 0.55, "BC|1960-1983": 0.40, "BC|1984-1999": 0.30, "BC|2000+": 0.22,
+    "CO|pre-1960": 0.314, "CO|1960-1983": 0.279, "CO|1984-1999": 0.247, "CO|2000+": 0.199,
+    "MI|pre-1960": 0.46, "MI|1960-1983": 0.357, "MI|1984-1999": 0.289, "MI|2000+": 0.267,
+    "NY|pre-1960": 0.331, "NY|1960-1983": 0.32, "NY|1984-1999": 0.261, "NY|2000+": 0.217,
+    "WA|pre-1960": 0.278, "WA|1960-1983": 0.247, "WA|1984-1999": 0.233, "WA|2000+": 0.182,
+};
+
+// Air-conditioning electricity intensity (GJ/m2/yr), keyed "REGION|vintage". [P_Cooling]
+const COOLING_INTENSITY_GJ_PER_M2 = {
+    "QC|pre-1960": 0.053, "QC|1960-1983": 0.041, "QC|1984-1999": 0.029, "QC|2000+": 0.024,
+    "ON|pre-1960": 0.043, "ON|1960-1983": 0.033, "ON|1984-1999": 0.023, "ON|2000+": 0.019,
+    "AB|pre-1960": 0.009, "AB|1960-1983": 0.007, "AB|1984-1999": 0.005, "AB|2000+": 0.004,
+    "BC|pre-1960": 0.029, "BC|1960-1983": 0.023, "BC|1984-1999": 0.016, "BC|2000+": 0.013,
+    "CO|pre-1960": 0.042, "CO|1960-1983": 0.029, "CO|1984-1999": 0.027, "CO|2000+": 0.024,
+    "MI|pre-1960": 0.043, "MI|1960-1983": 0.036, "MI|1984-1999": 0.020, "MI|2000+": 0.018,
+    "NY|pre-1960": 0.063, "NY|1960-1983": 0.060, "NY|1984-1999": 0.041, "NY|2000+": 0.029,
+    "WA|pre-1960": 0.050, "WA|1960-1983": 0.033, "WA|1984-1999": 0.022, "WA|2000+": 0.019,
+};
+
+// Water-heating useful demand U (GJ/household/yr), keyed "REGION|dwelling".
+// Dwelling-type load already baked in — do NOT re-apply envelope factor. [P_U_water]
+const WATER_DEMAND_GJ_PER_HH = {
+    "QC|detached": 12.4, "QC|attached": 11.3, "QC|apartment": 8.5,
+    "ON|detached": 11.2, "ON|attached": 10.2, "ON|apartment": 7.6,
+    "AB|detached": 19.8, "AB|attached": 18.0, "AB|apartment": 13.5,
+    "BC|detached": 15.8, "BC|attached": 14.4, "BC|apartment": 10.8,
+    "CO|detached": 12.8, "CO|attached": 11.6, "CO|apartment": 8.7,
+    "MI|detached": 11.6, "MI|attached": 10.6, "MI|apartment": 7.9,
+    "NY|detached": 12.0, "NY|attached": 10.9, "NY|apartment": 8.2,
+    "WA|detached": 14.7, "WA|attached": 13.4, "WA|apartment": 10.0,
+};
+
+// Other-electricity baseline (appliances/lighting/plug), GJ/household/yr. [P_OtherElec]
+const OTHER_ELEC_BASE_GJ = {
+    QC: 20.2, ON: 12.8, AB: 16.2, BC: 17.0,
+    CO: 21, MI: 21, NY: 16, WA: 20,
+};
+
+// Household-size factors (normalized, mean=1), indexed by household size 1..6+
+// (index 6 = "6+"). Index 0 (blank) -> size 1. [P_Size]
+// Occupancy enters the model only through these two factors (no per-person
+// division): other_elec_factor scales Other electricity, water_factor_ref
+// scales Water heating.
+const OTHER_ELEC_SIZE_FACTOR = [0.66, 0.66, 1.00, 1.17, 1.30, 1.41, 1.51]; // [P_Size col B]
+const WATER_SIZE_FACTOR = [0.64, 0.64, 0.95, 1.21, 1.40, 1.52, 1.55];       // [P_Size col C]
+
+// National system-mix weights for the "Don't know" blends. Canada used for
+// QC/ON/AB/BC, US for CO/MI/NY/WA. [P_DKHeat / P_DKWater weight columns]
+const DK_SPACE_MIX = {
+    CANADA: {gas: 0.443, oilprop: 0.059, baseboard: 0.374, heatpump: 0.079, wood: 0.045},
+    USA:    {gas: 0.533, oilprop: 0.086, baseboard: 0.216, heatpump: 0.146, wood: 0.019},
+};
+const DK_WATER_MIX = {
+    CANADA: {gas: 0.49,  electric: 0.492, oilprop: 0.018, hpwh: 0},
+    USA:    {gas: 0.482, electric: 0.463, oilprop: 0.055, hpwh: 0},
 };
 
 const COMBUSTION = {
@@ -185,14 +256,22 @@ const VEHICLE_FACTOR_BY_REGION = {
    * ========================================================================= */
 
 const OPTIONS = {
-    buildingStandard: ["", "old", "mid", "new"],
-    heatingType: ["", "oil", "gas", "hydro", "heatpump", "wood", "unknown"], // wood=5, unknown=6
+    // q33 dwelling vintage {<1960:1, 1960-1983:2, 1984-1999:3, >2000:4}; blank -> 1984-1999
+    vintage: ["1984-1999", "pre-1960", "1960-1983", "1984-1999", "2000+"],
+    // q40 dwelling {Apartment:1, Semi-detached:2, Detached:3}; blank -> detached
+    dwellingType: ["detached", "apartment", "attached", "detached"],
+    // q36 space heating {Gas:1, Electric:2, Heat pump:3, Oil/Propane:4, Wood:5, Don't know:6}; blank -> naturalgas
+    spaceSystem: ["naturalgas", "naturalgas", "electric", "heatpump", "oilpropane", "wood", "unknown"],
+    // q42 water heating {Natural gas:1, Electric:2, Don't know:3}; blank -> naturalgas
+    waterSystem: ["naturalgas", "naturalgas", "electric", "unknown"],
+    // q41 windows/insulation upgraded {Yes:1, No:2, Unsure:3} -> demand multiplier; blank -> 1.0
+    retrofitFactor: [1.0, 0.85, 1.0, 1.0],
     fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"],
     carSize: ["", "car", "truck", "suv"],
     diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
     canadaProvince: ["", "ON", "QC", "AB", "BC"],
     usaState: ["", "WA", "CO", "MI", "NY"],
-    householdSize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // index 0 (blank) -> 1 person
+    householdSize: [1, 1, 2, 3, 4, 5, 6], // q34 {1..6+}; recode 6 = "6+"; blank -> 1
 };
 
 const SHORT_HAUL_QUESTION_BY_REGION = {
@@ -319,10 +398,14 @@ function buildSurveyState(qData) {
         flight.long.personal = parseIntOrZero(qData[LONG_HAUL_QUESTION_BY_REGION[region]])
     }
     const heating = {
-        houseSize: atLeastOne(qData.q35),
+        vintage: choiceFromTable(qData.q33, OPTIONS.vintage),
         householdSize: choiceFromTable(qData.q34, OPTIONS.householdSize),
-        buildingStandard: choiceFromTable(qData.q33, OPTIONS.buildingStandard),
-        heatingType: choiceFromTable(qData.q36, OPTIONS.heatingType),
+        area: atLeastOne(qData.q35), // sqft of heated floor area
+        spaceSystem: choiceFromTable(qData.q36, OPTIONS.spaceSystem),
+        dwellingType: choiceFromTable(qData.q40, OPTIONS.dwellingType),
+        retrofitFactor: choiceFromTable(qData.q41, OPTIONS.retrofitFactor),
+        waterSystem: choiceFromTable(qData.q42, OPTIONS.waterSystem),
+        acOn: isFirstChoice(qData.q43),
     };
     const vehicle = {
         fuelType: "novehicle",
@@ -368,24 +451,109 @@ function calculateFlightEmissions(state){
     return Number(tonnes.toFixed(1));
   }
 
+// Residential energy: four components summed to a per-household kg figure,
+// then divided by household size for a per-person tonnes figure. Mirrors the
+// "Calculator" sheet of CO2_footprint_calculator.xlsx column for column.
+
+function gridFactor(region) {
+    return GRID_LIFECYCLE_KG_PER_GJ[region]; // kg CO2e/GJ, lifecycle
+}
+
+// Useful-heat efficiency / COP for a known space-heating system.
+function spaceEfficiency(system, region) {
+    if (system === "naturalgas") return GAS_EFFICIENCY[region];
+    if (system === "heatpump") return HEATPUMP_COP[region];
+    if (system === "oilpropane") return SPACE_EFF_OILPROP;
+    if (system === "wood") return SPACE_EFF_WOOD;
+    return SPACE_EFF_ELECTRIC; // electric baseboard
+}
+
+// kg CO2e/GJ of delivered fuel for a known space-heating system. Electricity
+// systems (baseboard, heat pump) bill at the regional grid factor.
+function spaceFuelFactor(system, region) {
+    if (system === "naturalgas") return FUEL_NG;
+    if (system === "oilpropane") return FUEL_OILPROP;
+    if (system === "wood") return FUEL_WOOD;
+    return gridFactor(region); // electric, heatpump
+}
+
+// "Don't know" space heating: expected kg per GJ of useful heat across the
+// national system mix = Sum(share * fuelFactor / efficiency). [P_DKHeat col K]
+function dkSpaceCoef(region, countryName) {
+    const w = DK_SPACE_MIX[countryName] || DK_SPACE_MIX.CANADA;
+    const grid = gridFactor(region);
+    return w.gas * (FUEL_NG / GAS_EFFICIENCY[region]) +
+        w.oilprop * (FUEL_OILPROP / SPACE_EFF_OILPROP) +
+        w.baseboard * grid +
+        w.heatpump * (grid / HEATPUMP_COP[region]) +
+        w.wood * (FUEL_WOOD / SPACE_EFF_WOOD);
+}
+
+// "Don't know" water heating: expected kg per GJ of useful hot water across the
+// national mix = Sum(share * fuelFactor / efficiency). [P_DKWater col H]
+function dkWaterCoef(region, countryName) {
+    const w = DK_WATER_MIX[countryName] || DK_WATER_MIX.CANADA;
+    const grid = gridFactor(region);
+    return w.gas * (FUEL_NG / WATER_EFF.naturalgas) +
+        w.electric * (grid / WATER_EFF.electric) +
+        w.oilprop * (FUEL_OILPROP / WATER_EFF.oilpropane) +
+        w.hpwh * (grid / WATER_EFF.heatpump);
+}
+
+function spaceHeatingKg(heating, region, countryName) {
+    const areaM2 = heating.area / SQFT_PER_SQM;
+    const usefulGJ =
+        SPACE_DEMAND_GJ_PER_M2[region + "|" + heating.vintage] * areaM2 *
+        ENVELOPE_FACTOR[heating.dwellingType] * heating.retrofitFactor;
+    if (heating.spaceSystem === "unknown") {
+        return usefulGJ * dkSpaceCoef(region, countryName);
+    }
+    const fuelGJ = usefulGJ / spaceEfficiency(heating.spaceSystem, region);
+    return fuelGJ * spaceFuelFactor(heating.spaceSystem, region);
+}
+
+function waterHeatingKg(heating, region, countryName) {
+    const usefulGJ =
+        WATER_DEMAND_GJ_PER_HH[region + "|" + heating.dwellingType] *
+        WATER_SIZE_FACTOR[heating.householdSize];
+    if (heating.waterSystem === "unknown") {
+        return usefulGJ * dkWaterCoef(region, countryName);
+    }
+    const fuelGJ = usefulGJ / WATER_EFF[heating.waterSystem];
+    const factor = heating.waterSystem === "electric" ? gridFactor(region) : FUEL_NG;
+    return fuelGJ * factor;
+}
+
+function airConditioningKg(heating, region) {
+    if (!heating.acOn) return 0;
+    const areaM2 = heating.area / SQFT_PER_SQM;
+    const electricityGJ =
+        COOLING_INTENSITY_GJ_PER_M2[region + "|" + heating.vintage] * areaM2 *
+        ENVELOPE_FACTOR[heating.dwellingType] * heating.retrofitFactor;
+    return electricityGJ * gridFactor(region);
+}
+
+function otherElectricityKg(heating, region) {
+    const electricityGJ =
+        OTHER_ELEC_BASE_GJ[region] * OTHER_ELEC_SIZE_FACTOR[heating.householdSize];
+    return electricityGJ * gridFactor(region);
+}
+
 function calculateHeatingEmissions(state){
     const heating = state.heating;
     const region = state.region;
+    const country = state.countryName;
 
-    const factor = 
-        heating.heatingType === "hydro" || heating.heatingType === "heatpump"
-            ? HEATING_FACTOR[heating.heatingType][region]
-            : HEATING_FACTOR[heating.heatingType];
-    
-    const houseSizeSqm = heating.houseSize / SQFT_PER_SQM;
+    const householdKg =
+        spaceHeatingKg(heating, region, country) +
+        waterHeatingKg(heating, region, country) +
+        airConditioningKg(heating, region) +
+        otherElectricityKg(heating, region);
 
-    const tonnes = 
-        ((houseSizeSqm * BUILDING_STANDARD_BY_REGION[region][heating.buildingStandard] * 
-        (factor / HEATING_EFFICIENCY[heating.heatingType])) / 
-        KG_PER_TONNE) / 
-        heating.householdSize;
-
-    return Number(tonnes.toFixed(1));
+    // Per-household: occupancy is already captured by the other_elec_factor and
+    // water_factor_ref size factors, so there is no per-person division.
+    const householdTonnes = householdKg / KG_PER_TONNE;
+    return Number(householdTonnes.toFixed(1));
   }
 
 function calculateVehicleEmissions(state) {
@@ -457,7 +625,7 @@ function calculateAvgGas_CF(state) {
   }
 
 function calculateHeatPump_CF(state) {
-    return calculateHeatingEmissions(withPatch(state, "heating", { heatingType: "heatpump" }));
+    return calculateHeatingEmissions(withPatch(state, "heating", { spaceSystem: "heatpump" }));
 }
 
 function calculateVegan_CF(state) {
@@ -581,11 +749,11 @@ function setInitialToggles(state) {
       state.flight.flownStatus ? "currentflight" : "noflight",
     ]);
 
-    const knownHeating = ["oil", "hydro", "gas", "wood", "heatpump"];
+    const knownHeating = ["naturalgas", "electric", "heatpump", "oilpropane", "wood"];
     $("input:radio[name=heatingToggle]").val([
-      knownHeating.includes(state.heating.heatingType)
-        ? state.heating.heatingType
-        : "oil",
+      knownHeating.includes(state.heating.spaceSystem)
+        ? state.heating.spaceSystem
+        : "naturalgas",
     ]);
 
     $("input:radio[name=vehicleToggle]").val([
@@ -616,11 +784,12 @@ function setInitialToggles(state) {
         state.flight.additional = value === "additionalflight";
         state.flight.noFlight = value === "noflight";
       },
-      // [Q4 FIXED] heatingType is the single source of truth; efficiency is
-      // derived from it at calc time, so the counterfactual now uses the
-      // toggled system's real efficiency/COP.
+      // spaceSystem is the single source of truth; efficiency/COP and fuel
+      // factor are derived from it at calc time, so the counterfactual uses the
+      // toggled system's real values. Radio values must be one of:
+      // naturalgas | electric | heatpump | oilpropane | wood.
       heatingToggle: function (value) {
-        state.heating.heatingType = value;
+        state.heating.spaceSystem = value;
       },
       vehicleToggle: function (value) {
         state.vehicle.fuelType = value;
