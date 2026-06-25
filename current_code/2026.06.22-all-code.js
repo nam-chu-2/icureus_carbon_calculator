@@ -790,6 +790,14 @@ function setInitialToggles(state) {
   // One generic wiring function. Each toggle supplies only the part that
   // differs: how the selected value changes the state. [P3]
   function wireToggles(chart, state, yAxisMax) {
+    // Captured once, before any toggle mutates fuelType: did this respondent
+    // actually report a vehicle? A "no vehicle" respondent has mileage 0, so
+    // their vehicle toggles would otherwise compute 0 forever. For them, picking
+    // a real fuel simulates a solo driver at the average-gas-car distance
+    // (17,000 km) so the radios are meaningful. Selecting "No Vehicle" again
+    // returns to 0.
+    const hasNoReportedVehicle = state.vehicle.fuelType === "novehicle";
+
     const toggleActions = {
       // The flight toggle is the study's intervention lever: three states
       // instead of a simple category swap.
@@ -806,6 +814,13 @@ function setInitialToggles(state) {
       },
       vehicleToggle: function (value) {
         state.vehicle.fuelType = value;
+        if (hasNoReportedVehicle && value !== "novehicle") {
+          // Solo driver, average gas-car distance, in km regardless of region.
+          state.vehicle.passengers = 1;
+          state.vehicle.vehicleSize = "car";
+          state.vehicle.mileage = AVG_GAS_CF_DISTANCE_KM;
+          state.mileageType = "KM";
+        }
       },
       dietToggle: function (value) {
         state.diet.dietType = value;
