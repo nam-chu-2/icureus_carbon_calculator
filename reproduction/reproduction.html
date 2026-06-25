@@ -1,16 +1,29 @@
 <style>
   .ghg-row {
     display: flex;
-    flex-wrap: wrap;       /* stacks the columns when the page gets narrow */
-    align-items: center;   /* vertically centers the toggles beside the chart */
+    flex-wrap: wrap; /* stacks the columns when the page gets narrow */
+    align-items: center; /* vertically centers the toggles beside the chart */
     gap: 24px;
   }
-  .ghg-chart    { flex: 1 1 58%; min-width: 300px; }
-  .ghg-controls { flex: 1 1 38%; min-width: 240px; }
-  .ghg-controls .radio-group { text-align: left; margin-bottom: 10px; }
+  .ghg-chart {
+    flex: 1 1 58%;
+    min-width: 300px;
+  }
+  .ghg-controls {
+    flex: 1 1 38%;
+    min-width: 240px;
+  }
+  .ghg-controls .radio-group {
+    text-align: left;
+    margin-bottom: 10px;
+  }
 
-  @media (max-width: 600px) {            /* mobile: stack instead of squeeze */
-    .ghg-chart, .ghg-controls { flex-basis: 100%; }
+  @media (max-width: 600px) {
+    /* mobile: stack instead of squeeze */
+    .ghg-chart,
+    .ghg-controls {
+      flex-basis: 100%;
+    }
   }
 </style>
 
@@ -51,7 +64,9 @@
       <label>
         <input name="heatingToggle" type="radio" value="hydro" /> Electric
       </label>
-      <label> <input name="heatingToggle" type="radio" value="wood" /> Wood </label>
+      <label>
+        <input name="heatingToggle" type="radio" value="wood" /> Wood
+      </label>
       <label>
         <input name="heatingToggle" type="radio" value="heatpump" /> Heat-Pump
       </label>
@@ -87,7 +102,9 @@
       <label>
         <input name="dietToggle" type="radio" value="vegetarian" /> Vegetarian
       </label>
-      <label> <input name="dietToggle" type="radio" value="vegan" /> Vegan </label>
+      <label>
+        <input name="dietToggle" type="radio" value="vegan" /> Vegan
+      </label>
     </div>
   </div>
 </div>

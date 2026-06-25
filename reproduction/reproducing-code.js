@@ -63,7 +63,9 @@ const GLOBAL_AVERAGE_TONNES = 3.8;
 const SUSTAINABLE_TARGET_TONNES = 2.5;
 const ADDITIONAL_FLIGHT_TONNES = 3.0;
 
-// Average annual driving distance (km) used by the Avg_Gas_CF counterfactual.
+// Average annual driving distance (km) used by the average-driver
+// counterfactuals: the Avg_Gas_CF embedded value and the chart's vehicle
+// toggles for respondents who reported no vehicle.
 const AVG_GAS_CF_DISTANCE_KM = 17000;
 
 const SQFT_PER_SQM = 10.7639;
@@ -326,8 +328,10 @@ function buildSurveyState(qData) {
         vehicleSize: "car",
         passengers: 1,
         mileage: 0,
+        ownsVehicle: false, // q1 = "No": no real driving data to chart
     };
     if (isFirstChoice(qData.q1)) {
+        vehicle.ownsVehicle = true;
         vehicle.fuelType = choiceFromTable(qData.q2, OPTIONS.fuelType);
         vehicle.vehicleSize = choiceFromTable(qData.q3,OPTIONS.carSize);
         vehicle.passengers = atLeastOne(qData.q6);
@@ -414,9 +418,16 @@ function computeEmissions(state) {
 }
 
 function calculateYAxisMax(state) {
+    // The axis is frozen at load, so it must fit the largest scenario the
+    // toggles can reach. Respondents with no vehicle start at 0 but can toggle
+    // up to the average-driver gas counterfactual (the highest vehicle option),
+    // so size the axis to that rather than to their 0 starting value.
+    const vehicleTonnes = state.vehicle.ownsVehicle
+        ? calculateVehicleEmissions(state)
+        : calculateAvgGas_CF(state);
     const counterfactualTotal = calculateFlightEmissions(state) +
     calculateHeatingEmissions(state) +
-    calculateVehicleEmissions(state) +
+    vehicleTonnes +
     calculateDietEmissions(state) +
     ADDITIONAL_FLIGHT_TONNES;
     return Math.ceil(counterfactualTotal + Y_AXIS_HEADROOM_TONNES);
@@ -621,6 +632,18 @@ function setInitialToggles(state) {
       },
       vehicleToggle: function (value) {
         state.vehicle.fuelType = value;
+        // Respondents who reported no vehicle have no driving data, so a fuel
+        // selection is the average-driver counterfactual: a solo driver
+        // covering AVG_GAS_CF_DISTANCE_KM per year (km). "No Vehicle" -> 0.
+        if (!state.vehicle.ownsVehicle) {
+          if (value === "novehicle") {
+            state.vehicle.mileage = 0;
+          } else {
+            state.vehicle.mileage = AVG_GAS_CF_DISTANCE_KM;
+            state.vehicle.passengers = 1;
+            state.mileageType = "KM";
+          }
+        }
       },
       dietToggle: function (value) {
         state.diet.dietType = value;

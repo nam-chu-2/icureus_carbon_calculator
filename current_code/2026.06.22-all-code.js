@@ -49,7 +49,7 @@ const qData = {
     q31: "${q://QID374/ChoiceTextEntryValue}", // # of long haul flights (Michigan)
     q32: "${q://QID21/SelectedChoicesRecode}", // Diet: {Omnivore: 1, Flexitarian: 2, Vegetarian: 3, Vegan: 4}
     q33: "${q://QID23/SelectedChoicesRecode}", // Age of Residence: {< 1960: 1, 1960-1983: 2, 1984-1999: 3, > 2000: 4}
-    q34: "${q://QID24/SelectedChoicesRecode}", // Size of household: {1-10+}
+    q34: "${q://QID24/SelectedChoicesRecode}", // Size of household: {1-9+}
     q35: "${q://QID25/ChoiceTextEntryValue}", // Size of total heated area (all of the heated area including storage rooms, excluding unheated basements and attics)
     q36: "${q://QID26/SelectedChoicesRecode}", // Main type of heating {Gas: 1, Electric: 2, Heat pump: 3, Heating Oil or Propane: 4, Wood: 5, I don't know: 6}
     q37: "${q://QID262/SelectedChoicesRecode}", // What is your country: {Canada: 1, USA: 2}
@@ -189,13 +189,22 @@ const OTHER_ELEC_BASE_GJ = {
     CO: 21, MI: 21, NY: 16, WA: 20,
 };
 
-// Household-size factors (normalized, mean=1), indexed by household size 1..6+
-// (index 6 = "6+"). Index 0 (blank) -> size 1. [P_Size]
-// Occupancy enters the model only through these two factors (no per-person
-// division): other_elec_factor scales Other electricity, water_factor_ref
-// scales Water heating.
-const OTHER_ELEC_SIZE_FACTOR = [0.66, 0.66, 1.00, 1.17, 1.30, 1.41, 1.51]; // [P_Size col B]
-const WATER_SIZE_FACTOR = [0.64, 0.64, 0.95, 1.21, 1.40, 1.52, 1.55];       // [P_Size col C]
+// Household-size load factors (normalized to mean=1), RECS 2020 (CO/MI/NY/WA
+// pooled), indexed by household size 1..6+ (index 6 = "6+"). Index 0 (blank) ->
+// size 1. [P_Size]
+//
+// Per the workbook: "other_elec_factor used; water_factor_ref optional." So we
+// apply the other-electricity factor (it scales the household Other-electricity
+// total sub-linearly with occupancy) but DO NOT size-scale water — occupancy
+// enters water only through the per-person division in calculateHeatingEmissions.
+// The optional water_factor_ref [P_Size col C], size 1..6+, is kept here for
+// reference only: [0.64, 0.95, 1.21, 1.40, 1.52, 1.55].
+const OTHER_ELEC_SIZE_FACTOR = [0.66, 0.66, 1.00, 1.17, 1.30, 1.41, 1.51]; // [P_Size col B] — applied
+
+// Last defined size-factor bin ("6+"). Household sizes above this clamp to it for
+// the other-electricity factor lookup, while the per-person divisor uses the
+// actual size (1..9+).
+const SIZE_FACTOR_MAX_BIN = 6;
 
 // National system-mix weights for the "Don't know" blends. Canada used for
 // QC/ON/AB/BC, US for CO/MI/NY/WA. [P_DKHeat / P_DKWater weight columns]
@@ -271,7 +280,8 @@ const OPTIONS = {
     diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
     canadaProvince: ["", "ON", "QC", "AB", "BC"],
     usaState: ["", "WA", "CO", "MI", "NY"],
-    householdSize: [1, 1, 2, 3, 4, 5, 6], // q34 {1..6+}; recode 6 = "6+"; blank -> 1
+    // q34 {1..9+}; recode 9 = "9+"; blank -> 1
+    householdSize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 };
 
 const SHORT_HAUL_QUESTION_BY_REGION = {
@@ -513,9 +523,9 @@ function spaceHeatingKg(heating, region, countryName) {
 }
 
 function waterHeatingKg(heating, region, countryName) {
-    const usefulGJ =
-        WATER_DEMAND_GJ_PER_HH[region + "|" + heating.dwellingType] *
-        WATER_SIZE_FACTOR[heating.householdSize];
+    // Water demand is NOT size-scaled (water_factor_ref is optional per RECS 2020);
+    // occupancy enters water only via the per-person division downstream.
+    const usefulGJ = WATER_DEMAND_GJ_PER_HH[region + "|" + heating.dwellingType];
     if (heating.waterSystem === "unknown") {
         return usefulGJ * dkWaterCoef(region, countryName);
     }
@@ -535,7 +545,8 @@ function airConditioningKg(heating, region) {
 
 function otherElectricityKg(heating, region) {
     const electricityGJ =
-        OTHER_ELEC_BASE_GJ[region] * OTHER_ELEC_SIZE_FACTOR[heating.householdSize];
+        OTHER_ELEC_BASE_GJ[region] *
+        OTHER_ELEC_SIZE_FACTOR[Math.min(heating.householdSize, SIZE_FACTOR_MAX_BIN)];
     return electricityGJ * gridFactor(region);
 }
 
@@ -550,10 +561,12 @@ function calculateHeatingEmissions(state){
         airConditioningKg(heating, region) +
         otherElectricityKg(heating, region);
 
-    // Per-household: occupancy is already captured by the other_elec_factor and
-    // water_factor_ref size factors, so there is no per-person division.
-    const householdTonnes = householdKg / KG_PER_TONNE;
-    return Number(householdTonnes.toFixed(1));
+    // Per person: divide the household total by the actual household size (1..9+).
+    // The water/other-electricity size factors capture sub-linear scaling of the
+    // household total with occupancy; this division converts that total into a
+    // per-person figure, consistent with the diet/vehicle/flight categories.
+    const perPersonTonnes = householdKg / heating.householdSize / KG_PER_TONNE;
+    return Number(perPersonTonnes.toFixed(1));
   }
 
 function calculateVehicleEmissions(state) {
