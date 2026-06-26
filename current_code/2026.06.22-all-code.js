@@ -59,11 +59,12 @@ const qData = {
     q41: "${q://QID385/SelectedChoicesRecode}",  // Have windows or insulation been significantly upgraded since the home was built? {Yes: 1, No: 2, Unsure: 3}
     q42: "${q://QID387/SelectedChoicesRecode}", // Energy source for heating water: {Natural gas: 1, Electric: 2, Don't know: 3}
     q43: "${q://QID386/SelectedChoicesRecode}", // AC: {Yes: 1, No: 2},
+    q44: "${q://QID407/SelectedChoicesRecode}", // Male: 1, Female: 2, Other: 3
 }; console.log(qData)
 // Constants
 
 // Chart Benchmarks (tonnes C02e per person per year)
-const GLOBAL_AVERAGE_TONNES = 3.8;
+const GLOBAL_AVERAGE_TONNES = 2.9; // displayed/labelled as 2.9
 const SUSTAINABLE_TARGET_TONNES = 2.5;
 const ADDITIONAL_FLIGHT_TONNES = 3.0;
 
@@ -76,12 +77,31 @@ const KG_PER_TONNE = 1000;
 
 const Y_AXIS_HEADROOM_TONNES = 0.5;
 
+// Gender-specific diet factors, upscaled for higher calories/capita in
+// Canada/US. Keyed by gender (q44) then diet type. "Other"/unspecified
+// gender uses the mean of the men and women factors.
 const DIET_FACTOR_TONNES = {
-    omnivore: 1.6279,
-    flexitarian: 1.23735,
-    vegetarian: 0.8468,
-    vegan: 0.5037,
-    "": 1.6279, // blank answer defaults to omnivore
+    men: {
+        omnivore: 2.018596,
+        flexitarian: 1.534314,
+        vegetarian: 1.050032,
+        vegan: 0.624588,
+        "": 2.018596, // blank diet defaults to omnivore
+    },
+    women: {
+        omnivore: 1.505808,
+        flexitarian: 1.144549,
+        vegetarian: 0.78329,
+        vegan: 0.465923,
+        "": 1.505808,
+    },
+    other: {
+        omnivore: 1.762202,
+        flexitarian: 1.3394315,
+        vegetarian: 0.916661,
+        vegan: 0.5452555,
+        "": 1.762202,
+    },
 };
 
 const FLIGHT_FACTOR_TONNES = {
@@ -119,10 +139,10 @@ const GAS_EFFICIENCY = {
     CO: 0.85, MI: 0.85, NY: 0.85, WA: 0.85,
 };
 
-// Air-source heat-pump seasonal COP: 1.9 Canada / 2.0 US. [P_HPcop]
+// Air-source heat-pump seasonal COP: 1.9 Canada / 1.9 US. [P_HPcop]
 const HEATPUMP_COP = {
     QC: 1.9, ON: 1.9, AB: 1.9, BC: 1.9,
-    CO: 2.0, MI: 2.0, NY: 2.0, WA: 2.0,
+    CO: 1.9, MI: 1.9, NY: 1.9, WA: 1.9,
 };
 
 // Lifecycle fuel emission factors, kg CO2e/GJ (combustion + upstream). [P_EF_Fuel]
@@ -278,6 +298,8 @@ const OPTIONS = {
     fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"],
     carSize: ["", "car", "truck", "suv"],
     diet: ["", "omnivore", "flexitarian", "vegetarian", "vegan"],
+    // q44 gender {Male:1, Female:2, Other:3}; blank/Other -> averaged factors
+    gender: ["other", "men", "women", "other"],
     canadaProvince: ["", "ON", "QC", "AB", "BC"],
     usaState: ["", "WA", "CO", "MI", "NY"],
     // q34 {1..9+}; recode 9 = "9+"; blank -> 1
@@ -430,7 +452,10 @@ function buildSurveyState(qData) {
         vehicle.mileage = parseIntOrZero(isCanada ? qData.q4: qData.q5);
     }
 
-    const diet = {dietType: choiceFromTable(qData.q32, OPTIONS.diet)};
+    const diet = {
+        dietType: choiceFromTable(qData.q32, OPTIONS.diet),
+        gender: choiceFromTable(qData.q44, OPTIONS.gender),
+    };
 
     return {countryName, mileageType, region, flight, heating, vehicle, diet};
 }
@@ -585,7 +610,7 @@ function calculateVehicleEmissions(state) {
 }
 
 function calculateDietEmissions(state) {
-    return Number(DIET_FACTOR_TONNES[state.diet.dietType].toFixed(1));
+    return Number(DIET_FACTOR_TONNES[state.diet.gender][state.diet.dietType].toFixed(1));
 }
 
 function computeEmissions(state) {
