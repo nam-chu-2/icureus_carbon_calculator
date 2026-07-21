@@ -50,7 +50,6 @@ const qData = {
     District of Columbia
     Florida
     Georgia
-    Guam
     Hawaii
     Idaho
     Illinois
@@ -101,7 +100,9 @@ const qData = {
 
 // Chart Benchmarks (tonnes C02e per person per year)
 const GLOBAL_AVERAGE_TONNES = 2.9; // displayed/labelled as 2.9
-const SUSTAINABLE_TARGET_TONNES = 2.5;
+// Displayed 2030 target: the Hot or Cool 2.5 t global target scaled to the
+// share of emissions categories this calculator captures: 2.9 x (2.5 / 4.6).
+const SUSTAINABLE_TARGET_TONNES = 1.57;
 const ADDITIONAL_FLIGHT_TONNES = 3.0;
 
 // Average annual driving distance (km) used by the Avg_Gas_CF counterfactual.
@@ -112,6 +113,13 @@ const KM_PER_MILE = 1.60934;
 const KG_PER_TONNE = 1000;
 
 const Y_AXIS_HEADROOM_TONNES = 0.5;
+
+// Radio option values for the results-page intervention toggles. These MUST
+// mirror the `value=` attributes in the results HTML — they drive the frozen
+// y-axis, which is sized to the worst case the respondent can reach by toggling.
+const HEATING_TOGGLE_OPTIONS = ["naturalgas", "electric", "heatpump", "oilpropane", "wood"];
+const VEHICLE_TOGGLE_OPTIONS = ["petrol", "hybrid", "phev", "battery", "novehicle"];
+const DIET_TOGGLE_OPTIONS = ["omnivore", "flexitarian", "vegetarian", "vegan"];
 
 // Gender-specific diet factors, upscaled for higher calories/capita in
 // Canada/US. Keyed by gender (q44) then diet type. "Other"/unspecified
@@ -176,9 +184,15 @@ const GRID_LIFECYCLE_KG_PER_GJ = {
     OK: 99.344411, OR: 33.965381, PA: 82.838021, RI: 80.399414, SC: 69.775568, SD: 43.654995,
     TN: 94.947873, TX: 109.744371, UT: 139.051137, VT: 6.653872, VA: 70.775568, WA: 40.299842,
     WV: 186.752894, WI: 120.671908, WY: 185.895746,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 193.792284, PR: 193.792284, VI: 193.792284,
+    /* U.S. territories (provisional, analog-based — see "full calculator
+       details" PDF §3h). PR: eGRID2023 PRMS output rate 702 g CO2e/kWh;
+       VI: ~700 g CO2e/kWh derived from its 2022 generation fuel mix
+       (~69% propane, ~31% diesel), net of ~2-3% solar. Both grossed to a
+       delivered basis by island T&D losses (PR ~12%, VI ~9%), same formula
+       as P_EF_Elec (g/kWh / 3.6 / (1 - loss)); upstream adder estimated
+       from the fossil fuel mix, analog to HI's oil-heavy island grid
+       (PR +18, VI +20 kg CO2e/GJ). */
+    PR: 239.590909, VI: 233.675214,
 };
 
 // Gas-furnace seasonal efficiency, province/state-specific. [P_GasEff]
@@ -197,9 +211,9 @@ const GAS_EFFICIENCY = {
     OK: 0.85, OR: 0.85, PA: 0.85, RI: 0.85, SC: 0.85, SD: 0.85,
     TN: 0.85, TX: 0.85, UT: 0.85, VT: 0.85, VA: 0.85, WA: 0.85,
     WV: 0.85, WI: 0.85, WY: 0.85,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 0.85, PR: 0.85, VI: 0.85,
+    /* U.S. territories: US national ~0.85 stock value (gas heating is
+       essentially absent in PR/VI; value only feeds counterfactual toggles). */
+    PR: 0.85, VI: 0.85,
 };
 
 // Air-source heat-pump seasonal COP: 1.9 Canada / 2.0 US. [P_HPcop]
@@ -218,9 +232,8 @@ const HEATPUMP_COP = {
     OK: 2, OR: 2, PA: 2, RI: 2, SC: 2, SD: 2,
     TN: 2, TX: 2, UT: 2, VT: 2, VA: 2, WA: 2,
     WV: 2, WI: 2, WY: 2,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 2, PR: 2, VI: 2,
+    /* U.S. territories: US national 2.0 value. */
+    PR: 2, VI: 2,
 };
 
 // Lifecycle fuel emission factors, kg CO2e/GJ (combustion + upstream). [P_EF_Fuel]
@@ -312,9 +325,9 @@ const SPACE_DEMAND_GJ_PER_M2 = {
     "WV|pre-1960": 0.358, "WV|1960-1983": 0.328, "WV|1984-1999": 0.267, "WV|2000+": 0.227,
     "WI|pre-1960": 0.496, "WI|1960-1983": 0.389, "WI|1984-1999": 0.312, "WI|2000+": 0.288,
     "WY|pre-1960": 0.482, "WY|1960-1983": 0.377, "WY|1984-1999": 0.303, "WY|2000+": 0.28,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    "GU|pre-1960": 0.028, "GU|1960-1983": 0.021, "GU|1984-1999": 0.014, "GU|2000+": 0.011,
+    /* U.S. territories (provisional, analog-based — PDF §3h): essentially no
+       space-heating demand (heating-degree-days ~0), so intensities are set
+       near zero via the HI (warmest-state) values. */
     "PR|pre-1960": 0.028, "PR|1960-1983": 0.021, "PR|1984-1999": 0.014, "PR|2000+": 0.011,
     "VI|pre-1960": 0.028, "VI|1960-1983": 0.021, "VI|1984-1999": 0.014, "VI|2000+": 0.011,
 };
@@ -387,11 +400,10 @@ const COOLING_INTENSITY_GJ_PER_M2 = {
     "WV|pre-1960": 0.071, "WV|1960-1983": 0.055, "WV|1984-1999": 0.04, "WV|2000+": 0.033,
     "WI|pre-1960": 0.059, "WI|1960-1983": 0.045, "WI|1984-1999": 0.033, "WI|2000+": 0.027,
     "WY|pre-1960": 0.034, "WY|1960-1983": 0.026, "WY|1984-1999": 0.019, "WY|2000+": 0.016,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    "GU|pre-1960": 0.191, "GU|1960-1983": 0.147, "GU|1984-1999": 0.107, "GU|2000+": 0.088,
-    "PR|pre-1960": 0.191, "PR|1960-1983": 0.147, "PR|1984-1999": 0.107, "PR|2000+": 0.088,
-    "VI|pre-1960": 0.191, "VI|1960-1983": 0.147, "VI|1984-1999": 0.107, "VI|2000+": 0.088,
+    /* U.S. territories (provisional, analog-based — PDF §3h): mean of the
+       warm-climate U.S. analogs Florida and Hawaii. */
+    "PR|pre-1960": 0.201, "PR|1960-1983": 0.155, "PR|1984-1999": 0.113, "PR|2000+": 0.093,
+    "VI|pre-1960": 0.201, "VI|1960-1983": 0.155, "VI|1984-1999": 0.113, "VI|2000+": 0.093,
 };
 
 // Water-heating useful demand U (GJ/household/yr), keyed "REGION|dwelling".
@@ -463,11 +475,10 @@ const WATER_DEMAND_GJ_PER_HH = {
     "WV|detached": 12.7, "WV|attached": 11.5, "WV|apartment": 8.6,
     "WI|detached": 12.3, "WI|attached": 11.2, "WI|apartment": 8.4,
     "WY|detached": 14.9, "WY|attached": 13.5, "WY|apartment": 10.1,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    "GU|detached": 9.9, "GU|attached": 9, "GU|apartment": 6.8,
-    "PR|detached": 9.9, "PR|attached": 9, "PR|apartment": 6.8,
-    "VI|detached": 9.9, "VI|attached": 9, "VI|apartment": 6.8,
+    /* U.S. territories (provisional, analog-based — PDF §3h): mean of the
+       warm-climate U.S. analogs Florida and Hawaii. */
+    "PR|detached": 10.1, "PR|attached": 9.2, "PR|apartment": 7,
+    "VI|detached": 10.1, "VI|attached": 9.2, "VI|apartment": 7,
 };
 
 // Other-electricity baseline (appliances/lighting/plug), GJ/household/yr. [P_OtherElec]
@@ -486,9 +497,9 @@ const OTHER_ELEC_BASE_GJ = {
     OK: 22.5, OR: 18.5, PA: 18, RI: 17, SC: 24, SD: 21.5,
     TN: 23, TX: 23, UT: 21, VT: 16.5, VA: 20, WA: 20,
     WV: 22, WI: 21, WY: 22,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 19, PR: 19, VI: 19,
+    /* U.S. territories (provisional, analog-based — PDF §3h): mean of the
+       warm-climate U.S. analogs Florida (27) and Hawaii (19). */
+    PR: 23, VI: 23,
 };
 
 // Household-size load factors (normalized to mean=1), RECS 2020 (CO/MI/NY/WA
@@ -518,6 +529,13 @@ const DK_WATER_MIX = {
     CANADA: {gas: 0.49,  electric: 0.492, oilprop: 0.018, hpwh: 0},
     USA:    {gas: 0.482, electric: 0.463, oilprop: 0.055, hpwh: 0},
 };
+
+// Tropical U.S. territories: "Don't know" mixes assume predominantly electric
+// heating and water heating (PDF §3h) — the fossil-heavy national US mix would
+// misrepresent PR/VI, where piped gas and heating oil are essentially absent.
+const DK_ELECTRIC_REGIONS = ["PR", "VI"];
+const DK_SPACE_MIX_TERRITORY = {gas: 0, oilprop: 0, baseboard: 1, heatpump: 0, wood: 0};
+const DK_WATER_MIX_TERRITORY = {gas: 0, electric: 1, oilprop: 0, hpwh: 0};
 
 const COMBUSTION = {
     petrol : {car: 0.215, truck: 0.315, suv: 0.315},
@@ -727,11 +745,10 @@ const VEHICLE_FACTOR_BY_REGION = {
     WY: regionVehicleFactors({
         phev: {car: 0.086, truck: 0.119, suv: 0.119},
         battery: {car: 0.05, truck: 0.081, suv: 0.081}}),
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: regionVehicleFactors({
-        phev: {car: 0.129, truck: 0.162, suv: 0.162},
-        battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
+    /* U.S. territories (provisional, analog-based): AFLEET has no territory
+       rows; HI — the highest-emission state grid and closest island analog to
+       the PR/VI oil-fired grids — supplies the grid-dependent phev/battery
+       rows. */
     PR: regionVehicleFactors({
         phev: {car: 0.129, truck: 0.162, suv: 0.162},
         battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
@@ -768,10 +785,12 @@ const OPTIONS = {
         "AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK",
         "YT"],
     // q22 state / US territory, alphabetical by full name. Index 0 is the blank
-    // fallback. Note DC (9), and the three territories with no workbook data:
-    // GU (12), PR (41), VI (47) — see PLACEHOLDER_REGIONS.
+    // fallback. Note DC (9), PR (40), and VI (46) — "U.S. Virgin Islands"
+    // sorts before Utah. Guam was dropped from the survey (July 2026); the
+    // Qualtrics recodes must be renumbered so recode = alphabetical position
+    // in this Guam-free list.
     usaState: ["",
-        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "GU",
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA",
         "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI",
         "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND",
         "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "VI", "UT",
@@ -780,10 +799,9 @@ const OPTIONS = {
     householdSize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 };
 
-// Jurisdictions the survey can return but the workbook has no row for. Their
-// factors above are seeded from HI so nothing evaluates to NaN.
-// TODO: replace the seeded values once real data lands.
-const PLACEHOLDER_REGIONS = ["GU", "PR", "VI"];
+// U.S. territories whose factors are provisional analog-based estimates
+// pending territory-specific survey data (PDF §3h) — not workbook rows.
+const PROVISIONAL_REGIONS = ["PR", "VI"];
 
 // Where an unresolved region falls back to. A blank or out-of-range recode would
 // otherwise index every factor table with `undefined` and yield NaN across the
@@ -807,6 +825,11 @@ const DEFAULT_REGION = {CANADA: "ON", USA: "CA"};
 
 function parseIntOrZero(answer){
     const parsed = parseInt(answer);
+    return isNaN(parsed) ? 0: parsed;
+}
+
+function parseFloatOrZero(answer){
+    const parsed = parseFloat(answer);
     return isNaN(parsed) ? 0: parsed;
 }
 
@@ -874,8 +897,8 @@ function resolveRegion(qData, isCanada, countryName) {
             " (q21=" + qData.q21 + ", q22=" + qData.q22 + ") — falling back to " + fallback);
         return fallback;
     }
-    if (PLACEHOLDER_REGIONS.indexOf(region) !== -1) {
-        console.warn("Region " + region + " is using placeholder factors seeded from HI.");
+    if (PROVISIONAL_REGIONS.indexOf(region) !== -1) {
+        console.warn("Region " + region + " uses provisional analog-based territory factors.");
     }
     return region;
 }
@@ -899,9 +922,9 @@ function buildSurveyState(qData) {
     };
     if (isFirstChoice(qData.q7)) {
         flight.flownStatus = true;
-        flight.short.personal = parseIntOrZero(qData.q8);
-        flight.medium.personal = parseIntOrZero(qData.q9);
-        flight.long.personal = parseIntOrZero(qData.q10);
+        flight.short.personal = parseFloatOrZero(qData.q8);
+        flight.medium.personal = parseFloatOrZero(qData.q9);
+        flight.long.personal = parseFloatOrZero(qData.q10);
     }
     const heating = {
         vintage: choiceFromTable(qData.q13, OPTIONS.vintage),
@@ -991,7 +1014,9 @@ function spaceFuelFactor(system, region) {
 // "Don't know" space heating: expected kg per GJ of useful heat across the
 // national system mix = Sum(share * fuelFactor / efficiency). [P_DKHeat col K]
 function dkSpaceCoef(region, countryName) {
-    const w = DK_SPACE_MIX[countryName] || DK_SPACE_MIX.CANADA;
+    const w = DK_ELECTRIC_REGIONS.indexOf(region) !== -1
+        ? DK_SPACE_MIX_TERRITORY
+        : DK_SPACE_MIX[countryName] || DK_SPACE_MIX.CANADA;
     const grid = gridFactor(region);
     return w.gas * (FUEL_NG / GAS_EFFICIENCY[region]) +
         w.oilprop * (FUEL_OILPROP / SPACE_EFF_OILPROP) +
@@ -1003,7 +1028,9 @@ function dkSpaceCoef(region, countryName) {
 // "Don't know" water heating: expected kg per GJ of useful hot water across the
 // national mix = Sum(share * fuelFactor / efficiency). [P_DKWater col H]
 function dkWaterCoef(region, countryName) {
-    const w = DK_WATER_MIX[countryName] || DK_WATER_MIX.CANADA;
+    const w = DK_ELECTRIC_REGIONS.indexOf(region) !== -1
+        ? DK_WATER_MIX_TERRITORY
+        : DK_WATER_MIX[countryName] || DK_WATER_MIX.CANADA;
     const grid = gridFactor(region);
     return w.gas * (FUEL_NG / WATER_EFF.naturalgas) +
         w.electric * (grid / WATER_EFF.electric) +
@@ -1098,13 +1125,67 @@ function computeEmissions(state) {
     return { flight, heating, vehicle, diet, total };
 }
 
+// Highest flight emissions the respondent can toggle to: their base flights plus
+// the extra long-haul flight. (The "No Flights" state is 0, so it is never the max.)
+function worstFlightEmissions(state) {
+    const base = calculateFlightEmissions(
+        withPatch(state, "flight", { additional: false, noFlight: false })
+    );
+    return base + ADDITIONAL_FLIGHT_TONNES;
+}
+
+// Highest heating emissions across every heating system the respondent can pick.
+function worstHeatingEmissions(state) {
+    return HEATING_TOGGLE_OPTIONS.reduce(function (worst, system) {
+        const cf = calculateHeatingEmissions(withPatch(state, "heating", { spaceSystem: system }));
+        return Math.max(worst, cf);
+    }, 0);
+}
+
+// Highest vehicle emissions across every fuel the respondent can pick. Mirrors the
+// vehicle special case in wireToggles: a "no vehicle" respondent who selects a real
+// fuel is simulated as a solo driver at the average gas-car distance.
+function worstVehicleEmissions(state) {
+    const hasNoReportedVehicle = state.vehicle.fuelType === "novehicle";
+    return VEHICLE_TOGGLE_OPTIONS.reduce(function (worst, fuel) {
+        let cfState;
+        if (hasNoReportedVehicle && fuel !== "novehicle") {
+            cfState = Object.assign(
+                withPatch(state, "vehicle", {
+                    fuelType: fuel,
+                    passengers: 1,
+                    vehicleSize: "car",
+                    mileage: AVG_GAS_CF_DISTANCE_KM,
+                }),
+                { mileageType: "KM" }
+            );
+        } else {
+            cfState = withPatch(state, "vehicle", { fuelType: fuel });
+        }
+        return Math.max(worst, calculateVehicleEmissions(cfState));
+    }, 0);
+}
+
+// Highest diet emissions across every diet the respondent can pick.
+function worstDietEmissions(state) {
+    return DIET_TOGGLE_OPTIONS.reduce(function (worst, dietType) {
+        const cf = calculateDietEmissions(withPatch(state, "diet", { dietType: dietType }));
+        return Math.max(worst, cf);
+    }, 0);
+}
+
+// Freeze the y-axis at the worst case the respondent can reach by toggling any
+// combination of the four intervention levers, so the bar never overflows and the
+// axis never rescales mid-interaction. The toggles are independent (each affects
+// only its own category), so the worst total is the sum of each category's worst
+// reachable value.
 function calculateYAxisMax(state) {
-    const counterfactualTotal = calculateFlightEmissions(state) +
-    calculateHeatingEmissions(state) +
-    calculateVehicleEmissions(state) +
-    calculateDietEmissions(state) +
-    ADDITIONAL_FLIGHT_TONNES;
-    return Math.ceil(counterfactualTotal + Y_AXIS_HEADROOM_TONNES);
+    const worstTotal =
+        worstFlightEmissions(state) +
+        worstHeatingEmissions(state) +
+        worstVehicleEmissions(state) +
+        worstDietEmissions(state);
+    return Math.ceil(worstTotal + Y_AXIS_HEADROOM_TONNES);
 }
 
  /* =========================================================================
@@ -1194,7 +1275,7 @@ function createChart(emissions, yAxisMax) {
             backgroundColor: COLORS.flight,
           },
           {
-            label: "Home Heating",
+            label: "Home Energy",
             data: [emissions.heating, 0, 0],
             backgroundColor: COLORS.heating,
           },
