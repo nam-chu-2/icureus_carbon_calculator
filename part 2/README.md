@@ -53,3 +53,28 @@ Tax <dest> <regime> = (CO2e kg / 1000) × regime rate, rounded to 2 significant 
 Resulting columns: `Tax CDG US_1`, `Tax LHR US_1`, `Tax NRT US_1`, `Tax Set1 US_1`, `Tax Set2 US_1`, and the same five for `US_2` and `US_3`.
 
 Example (ZIP3 005): CO2e CDG = 1430.51 kg = 1.43051 t → US_1: 30, US_2: 270, US_3: 1100.
+
+## Session log — 2026-07-21
+
+Everything above was produced in this session. Sequence of work:
+
+1. **Cleaned the source CSV in place** (`us_zip3_climate_footprint(US ZIP3 Summary).csv`): replaced 38 blank cells with 0 (drive columns only — see table above) and verified no blanks remain anywhere in the file.
+2. **Added `fly_dest_1–5`** based on the `Further Set` column (714 rows are Set A, 205 are Set B).
+3. **Added the 15 carbon tax columns** using rates from `footprint_parameters_June_16 pm(Tax Regimes).csv`, with kg→ton conversion and 2-significant-figure rounding.
+4. **Converted to Excel** (`_v1.xlsx`), then saved a web-compatible copy (`_v2_web.xlsx`) for Excel for the web — v2 still needs to be uploaded to OneDrive/SharePoint to actually open it there.
+5. **Created the trimmed extract** `us_zip3_tax_summary.csv` (25 columns).
+
+### Open items / things to decide next time
+
+- **Duplicate destination columns:** the source CSV still carries the pre-existing `flight_dest_1–5` columns alongside the new `fly_dest_1–5`. They match except `flight_dest_2` says "New York, United States" for Set B rows instead of "New York City, United States". Decide whether to drop `flight_dest_1–5`.
+- The xlsx versions (v1, v2_web) were generated **before** deciding the duplicate-column question — if `flight_dest_1–5` gets dropped from the CSV, regenerate both xlsx files and the trimmed extract.
+- `us_zip3_tax_summary.csv` has no xlsx counterpart yet; create one if it also needs to be viewed in Excel for the web.
+- Untouched inputs in this folder: `canada_fsa_flight_destinations.csv` and `co2_emissions.csv` (nothing was done with these).
+
+### How the derived files were built
+
+All transformations were plain Python (csv + openpyxl, no pandas required). Key details to reproduce or extend:
+
+- Read/write the CSV with `encoding='utf-8-sig'` (the file has a BOM).
+- 2-sig-fig rounding: `float(f'{x:.2g}')`.
+- In xlsx output, the ZIP3 column is written as text (number format `@`) to preserve leading zeros; all other numerics are real numbers.
