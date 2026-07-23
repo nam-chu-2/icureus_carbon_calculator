@@ -1,18 +1,4 @@
-/* This file is a reproduction of the graph and intro text code that calculates the user's carbon emissions. There are a few phases with this code:
 
-1. Capture
-- Captures the user's responses from the survey. 
-
-2. Convert
-- Converts the user's responses to an estimated carbon footprint using four emissions categories: 1) Diet 2) Flight 3) Ground Mobility 4) 
-3. Create
-- Creates a stacked bar chart to visualize these emissions
-4. Counterfactual 
-- Allows the user to use radiobuttons to play around with their emissions
-*/
-
-/* Qualtrics Questions API - Adding the following line instantiates an object within the Question's class. 
-*/
 
 Qualtrics.SurveyEngine.addOnReady(function(){
 const qData = {
@@ -38,6 +24,7 @@ const qData = {
     q20: "${q://QID1720071878/SelectedChoicesRecode}", // gender: {Male: 1, Female: 2, Don't know: 3}
     q21: "${q://QID1720071882/SelectedChoicesRecode}", // province: {Alberta: 1, British Columbia: 2, Manitoba: 3, New Brunswick: 4, Newfoundland: 5, Northwest: 6, Nova Scotia: 7, Nunavut: 8, Ontario: 9, PEI: 10, Quebec: 11, Saskatchewan: 12, Yukon: 13}
     q22: "${q://QID1720071883/SelectedChoicesRecode}", // state / us territory. All states/territories, in alphabetical order and recoded appropriately
+    q23: "${q://QID529/SelectedChoicesRecode}", // {Electric: 1, Natural gas: 2, oil or propane: 3, none - heat pump only: 4, Don't know: 5}
     /*
     Alabama
     Alaska
