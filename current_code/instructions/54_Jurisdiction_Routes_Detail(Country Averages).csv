@@ -1,7 +1,0 @@
-﻿Country,Band,Avg Total CO₂e 1-way (kg),Avg Total CO₂e RT (kg),Source
-US,Band 1 (<300 mi),68,136,Pax-weighted avg incl. original 8-city Atmosfair dataset
-US,Band 2 (300-2300 mi),324,648,Pax-weighted avg incl. original 8-city Atmosfair dataset
-US,Band 3 (>2300 mi),1289,2578,Pax-weighted avg incl. original 8-city Atmosfair dataset
-CA,Band 1 (<300 mi),45,90,Pax-weighted avg incl. original 8-city Atmosfair dataset
-CA,Band 2 (300-2300 mi),354,708,Pax-weighted avg incl. original 8-city Atmosfair dataset
-CA,Band 3 (>2300 mi),1534,3068,Pax-weighted avg incl. original 8-city Atmosfair dataset
