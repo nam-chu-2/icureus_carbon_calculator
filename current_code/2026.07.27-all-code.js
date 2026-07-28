@@ -89,7 +89,8 @@ const FLIGHT_FACTOR_TONNES = {
 };
 
 /* =========================================================================
- * RESIDENTIAL ENERGY MODEL  [ported verbatim from CO2_footprint_calculator.xlsx]
+ * RESIDENTIAL ENERGY MODEL
+ * [ported verbatim from CO2_calculator_all_jurisdictions 07.22.xlsx]
  * -------------------------------------------------------------------------
  * Home energy = Space heating + Water heating + Air conditioning + Other
  * electricity, computed per household (kg CO2e/yr) then divided by household
@@ -114,9 +115,11 @@ const GRID_LIFECYCLE_KG_PER_GJ = {
     OK: 99.344411, OR: 33.965381, PA: 82.838021, RI: 80.399414, SC: 69.775568, SD: 43.654995,
     TN: 94.947873, TX: 109.744371, UT: 139.051137, VT: 6.653872, VA: 70.775568, WA: 40.299842,
     WV: 186.752894, WI: 120.671908, WY: 185.895746,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 193.792284, PR: 193.792284, VI: 193.792284,
+    // PR (eGRID2022 PRMS) / VI (WAPA, oil-fired) [P_EF_Elec 07.22 workbook]:
+    // g/kWh x 0.277778 / (1 - grid loss) + upstream.
+    PR: 236.539179, VI: 251.541553,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
+    GU: 193.792284,
 };
 
 // Gas-furnace seasonal efficiency, province/state-specific. [P_GasEff]
@@ -135,30 +138,92 @@ const GAS_EFFICIENCY = {
     OK: 0.85, OR: 0.85, PA: 0.85, RI: 0.85, SC: 0.85, SD: 0.85,
     TN: 0.85, TX: 0.85, UT: 0.85, VT: 0.85, VA: 0.85, WA: 0.85,
     WV: 0.85, WI: 0.85, WY: 0.85,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 0.85, PR: 0.85, VI: 0.85,
+    PR: 0.85, VI: 0.85,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
+    GU: 0.85,
 };
 
-// Air-source heat-pump seasonal COP: 1.9 Canada / 2.0 US. [P_HPcop]
-const HEATPUMP_COP = {
+// Air-source heat-pump performance, jurisdiction-specific. [P_HPcop cols B-F]
+// cop            seasonal COP with electric-resistance / no / unknown backup —
+//                the field COP(T) curve (Gibb et al. 2023) integrated over the
+//                jurisdiction's climate, calibrated so the national
+//                load-weighted average reproduces 1.90 (CA) / 2.00 (US).
+// fhpGas/copGas  dual-fuel with a natural-gas backup furnace: fraction of the
+//                annual heating load the heat pump carries before the economic
+//                switchover, and its load-weighted operating COP above it.
+// fhpOil/copOil  same pair for an oil/propane backup.
+// See instructions/"Heat pump backup methodology (claude).docx".
+const HEATPUMP = {
     // Canada
-    QC: 1.9, ON: 1.9, AB: 1.9, BC: 1.9, MB: 1.9, SK: 1.9,
-    NS: 1.9, NB: 1.9, NL: 1.9, PE: 1.9, YT: 1.9, NT: 1.9,
-    NU: 1.9,
+    QC: {cop: 1.848, fhpGas: 0.971, copGas: 1.889, fhpOil: 0.971, copOil: 1.889},
+    ON: {cop: 2.069, fhpGas: 0.464, copGas: 2.442, fhpOil: 0.998, copOil: 2.072},
+    AB: {cop: 1.961, fhpGas: 0.373, copGas: 2.467, fhpOil: 0.971, copOil: 1.991},
+    BC: {cop: 2.453, fhpGas: 0.891, copGas: 2.531, fhpOil: 1, copOil: 2.453},
+    MB: {cop: 1.496, fhpGas: 0.18, copGas: 2.481, fhpOil: 0.733, copOil: 1.79},
+    SK: {cop: 1.549, fhpGas: 0.194, copGas: 2.483, fhpOil: 0.782, copOil: 1.796},
+    NS: {cop: 2.08, fhpGas: 0.476, copGas: 2.452, fhpOil: 0.999, copOil: 2.083},
+    NB: {cop: 1.855, fhpGas: 0.609, copGas: 2.129, fhpOil: 0.971, copOil: 1.896},
+    NL: {cop: 2.09, fhpGas: 0.999, copGas: 2.092, fhpOil: 0.999, copOil: 2.092},
+    PE: {cop: 1.928, fhpGas: 0.941, copGas: 1.978, fhpOil: 0.987, copOil: 1.949},
+    YT: {cop: 1.578, fhpGas: 0.592, copGas: 1.972, fhpOil: 0.796, copOil: 1.823},
+    NT: {cop: 1.246, fhpGas: 0.137, copGas: 2.505, fhpOil: 0.137, copOil: 2.505},
+    NU: {cop: 1.234, fhpGas: 0.134, copGas: 2.4, fhpOil: 0.142, copOil: 2.38},
     // United States
-    AL: 2, AK: 2, AZ: 2, AR: 2, CA: 2, CO: 2,
-    CT: 2, DE: 2, DC: 2, FL: 2, GA: 2, HI: 2,
-    ID: 2, IL: 2, IN: 2, IA: 2, KS: 2, KY: 2,
-    LA: 2, ME: 2, MD: 2, MA: 2, MI: 2, MN: 2,
-    MS: 2, MO: 2, MT: 2, NE: 2, NV: 2, NH: 2,
-    NJ: 2, NM: 2, NY: 2, NC: 2, ND: 2, OH: 2,
-    OK: 2, OR: 2, PA: 2, RI: 2, SC: 2, SD: 2,
-    TN: 2, TX: 2, UT: 2, VT: 2, VA: 2, WA: 2,
-    WV: 2, WI: 2, WY: 2,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 2, PR: 2, VI: 2,
+    AL: {cop: 2.208, fhpGas: 0.963, copGas: 2.233, fhpOil: 1, copOil: 2.208},
+    AK: {cop: 1.648, fhpGas: 0.351, copGas: 2.1, fhpOil: 0.351, copOil: 2.1},
+    AZ: {cop: 2.45, fhpGas: 0.999, copGas: 2.451, fhpOil: 1, copOil: 2.45},
+    AR: {cop: 2.119, fhpGas: 0.993, copGas: 2.125, fhpOil: 1, copOil: 2.119},
+    CA: {cop: 2.492, fhpGas: 0.999, copGas: 2.493, fhpOil: 0.999, copOil: 2.493},
+    CO: {cop: 1.885, fhpGas: 0.628, copGas: 2.091, fhpOil: 0.993, copOil: 1.891},
+    CT: {cop: 1.784, fhpGas: 0.483, copGas: 2.083, fhpOil: 0.483, copOil: 2.083},
+    DE: {cop: 1.956, fhpGas: 0.738, copGas: 2.098, fhpOil: 0.958, copOil: 1.985},
+    DC: {cop: 1.994, fhpGas: 0.79, copGas: 2.108, fhpOil: 1, copOil: 1.994},
+    FL: {cop: 2.667, fhpGas: 1, copGas: 2.667, fhpOil: 1, copOil: 2.667},
+    GA: {cop: 2.208, fhpGas: 0.963, copGas: 2.233, fhpOil: 1, copOil: 2.208},
+    HI: {cop: 2.727, fhpGas: 1, copGas: 2.727, fhpOil: 1, copOil: 2.727},
+    ID: {cop: 1.881, fhpGas: 0.624, copGas: 2.087, fhpOil: 1, copOil: 1.881},
+    IL: {cop: 1.745, fhpGas: 0.432, copGas: 2.083, fhpOil: 0.557, copOil: 1.992},
+    IN: {cop: 1.815, fhpGas: 0.529, copGas: 2.075, fhpOil: 0.928, copOil: 1.859},
+    IA: {cop: 1.669, fhpGas: 0.347, copGas: 2.086, fhpOil: 0.992, copOil: 1.677},
+    KS: {cop: 1.911, fhpGas: 0.675, copGas: 2.083, fhpOil: 0.999, copOil: 1.911},
+    KY: {cop: 1.996, fhpGas: 0.791, copGas: 2.11, fhpOil: 1, copOil: 1.996},
+    LA: {cop: 2.413, fhpGas: 0.998, copGas: 2.416, fhpOil: 1, copOil: 2.413},
+    ME: {cop: 1.679, fhpGas: 0.36, copGas: 2.097, fhpOil: 0.36, copOil: 2.097},
+    MD: {cop: 1.956, fhpGas: 0.738, copGas: 2.098, fhpOil: 0.738, copOil: 2.098},
+    MA: {cop: 1.86, fhpGas: 0.593, copGas: 2.084, fhpOil: 0.593, copOil: 2.084},
+    MI: {cop: 1.745, fhpGas: 0.432, copGas: 2.083, fhpOil: 0.462, copOil: 2.059},
+    MN: {cop: 1.585, fhpGas: 0.28, copGas: 2.1, fhpOil: 0.83, copOil: 1.679},
+    MS: {cop: 2.249, fhpGas: 0.977, copGas: 2.267, fhpOil: 1, copOil: 2.249},
+    MO: {cop: 1.911, fhpGas: 0.675, copGas: 2.083, fhpOil: 1, copOil: 1.911},
+    MT: {cop: 1.773, fhpGas: 0.468, copGas: 2.092, fhpOil: 0.998, copOil: 1.775},
+    NE: {cop: 1.703, fhpGas: 0.382, copGas: 2.079, fhpOil: 0.996, copOil: 1.708},
+    NV: {cop: 2.246, fhpGas: 0.976, copGas: 2.263, fhpOil: 1, copOil: 2.246},
+    NH: {cop: 1.711, fhpGas: 0.393, copGas: 2.089, fhpOil: 0.393, copOil: 2.089},
+    NJ: {cop: 1.914, fhpGas: 0.677, copGas: 2.086, fhpOil: 0.677, copOil: 2.086},
+    NM: {cop: 1.996, fhpGas: 0.791, copGas: 2.11, fhpOil: 1, copOil: 1.996},
+    NY: {cop: 1.897, fhpGas: 0.65, copGas: 2.086, fhpOil: 0.65, copOil: 2.086},
+    NC: {cop: 2.121, fhpGas: 0.917, copGas: 2.173, fhpOil: 1, copOil: 2.121},
+    ND: {cop: 1.45, fhpGas: 0.215, copGas: 2.117, fhpOil: 0.868, copOil: 1.546},
+    OH: {cop: 1.817, fhpGas: 0.531, copGas: 2.077, fhpOil: 0.767, copOil: 1.943},
+    OK: {cop: 2.033, fhpGas: 0.838, copGas: 2.123, fhpOil: 1, copOil: 2.033},
+    OR: {cop: 2.116, fhpGas: 0.907, copGas: 2.175, fhpOil: 1, copOil: 2.116},
+    PA: {cop: 1.956, fhpGas: 0.738, copGas: 2.098, fhpOil: 0.738, copOil: 2.098},
+    RI: {cop: 1.842, fhpGas: 0.566, copGas: 2.084, fhpOil: 0.566, copOil: 2.084},
+    SC: {cop: 2.291, fhpGas: 0.986, copGas: 2.302, fhpOil: 1, copOil: 2.291},
+    SD: {cop: 1.585, fhpGas: 0.28, copGas: 2.1, fhpOil: 0.97, copOil: 1.611},
+    TN: {cop: 2.056, fhpGas: 0.862, copGas: 2.135, fhpOil: 1, copOil: 2.056},
+    TX: {cop: 2.247, fhpGas: 0.977, copGas: 2.264, fhpOil: 1, copOil: 2.247},
+    UT: {cop: 1.837, fhpGas: 0.561, copGas: 2.079, fhpOil: 1, copOil: 1.838},
+    VT: {cop: 1.625, fhpGas: 0.312, copGas: 2.102, fhpOil: 0.312, copOil: 2.102},
+    VA: {cop: 2.036, fhpGas: 0.84, copGas: 2.126, fhpOil: 0.998, copOil: 2.038},
+    WA: {cop: 2.139, fhpGas: 0.923, copGas: 2.188, fhpOil: 1, copOil: 2.139},
+    WV: {cop: 1.935, fhpGas: 0.708, copGas: 2.092, fhpOil: 0.999, copOil: 1.936},
+    WI: {cop: 1.692, fhpGas: 0.372, copGas: 2.09, fhpOil: 0.606, copOil: 1.909},
+    WY: {cop: 1.8, fhpGas: 0.503, copGas: 2.097, fhpOil: 0.999, copOil: 1.801},
+    PR: {cop: 2.751, fhpGas: 1, copGas: 2.751, fhpOil: 1, copOil: 2.751},
+    VI: {cop: 2.751, fhpGas: 1, copGas: 2.751, fhpOil: 1, copOil: 2.751},
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
+    GU: {cop: 2.727, fhpGas: 1, copGas: 2.727, fhpOil: 1, copOil: 2.727},
 };
 
 // Lifecycle fuel emission factors, kg CO2e/GJ (combustion + upstream). [P_EF_Fuel]
@@ -250,11 +315,11 @@ const SPACE_DEMAND_GJ_PER_M2 = {
     "WV|pre-1960": 0.358, "WV|1960-1983": 0.328, "WV|1984-1999": 0.267, "WV|2000+": 0.227,
     "WI|pre-1960": 0.496, "WI|1960-1983": 0.389, "WI|1984-1999": 0.312, "WI|2000+": 0.288,
     "WY|pre-1960": 0.482, "WY|1960-1983": 0.377, "WY|1984-1999": 0.303, "WY|2000+": 0.28,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
+    // Tropical territories — space heating essentially zero.
+    "PR|pre-1960": 0.01, "PR|1960-1983": 0.007, "PR|1984-1999": 0.005, "PR|2000+": 0.004,
+    "VI|pre-1960": 0.01, "VI|1960-1983": 0.007, "VI|1984-1999": 0.005, "VI|2000+": 0.004,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
     "GU|pre-1960": 0.028, "GU|1960-1983": 0.021, "GU|1984-1999": 0.014, "GU|2000+": 0.011,
-    "PR|pre-1960": 0.028, "PR|1960-1983": 0.021, "PR|1984-1999": 0.014, "PR|2000+": 0.011,
-    "VI|pre-1960": 0.028, "VI|1960-1983": 0.021, "VI|1984-1999": 0.014, "VI|2000+": 0.011,
 };
 
 // Air-conditioning electricity intensity (GJ/m2/yr), keyed "REGION|vintage". [P_Cooling]
@@ -325,11 +390,10 @@ const COOLING_INTENSITY_GJ_PER_M2 = {
     "WV|pre-1960": 0.071, "WV|1960-1983": 0.055, "WV|1984-1999": 0.04, "WV|2000+": 0.033,
     "WI|pre-1960": 0.059, "WI|1960-1983": 0.045, "WI|1984-1999": 0.033, "WI|2000+": 0.027,
     "WY|pre-1960": 0.034, "WY|1960-1983": 0.026, "WY|1984-1999": 0.019, "WY|2000+": 0.016,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
+    "PR|pre-1960": 0.229, "PR|1960-1983": 0.176, "PR|1984-1999": 0.128, "PR|2000+": 0.106,
+    "VI|pre-1960": 0.229, "VI|1960-1983": 0.176, "VI|1984-1999": 0.128, "VI|2000+": 0.106,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
     "GU|pre-1960": 0.191, "GU|1960-1983": 0.147, "GU|1984-1999": 0.107, "GU|2000+": 0.088,
-    "PR|pre-1960": 0.191, "PR|1960-1983": 0.147, "PR|1984-1999": 0.107, "PR|2000+": 0.088,
-    "VI|pre-1960": 0.191, "VI|1960-1983": 0.147, "VI|1984-1999": 0.107, "VI|2000+": 0.088,
 };
 
 // Water-heating useful demand U (GJ/household/yr), keyed "REGION|dwelling".
@@ -401,11 +465,10 @@ const WATER_DEMAND_GJ_PER_HH = {
     "WV|detached": 12.7, "WV|attached": 11.5, "WV|apartment": 8.6,
     "WI|detached": 12.3, "WI|attached": 11.2, "WI|apartment": 8.4,
     "WY|detached": 14.9, "WY|attached": 13.5, "WY|apartment": 10.1,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
+    "PR|detached": 8.9, "PR|attached": 8.1, "PR|apartment": 6.1,
+    "VI|detached": 8.9, "VI|attached": 8.1, "VI|apartment": 6.1,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
     "GU|detached": 9.9, "GU|attached": 9, "GU|apartment": 6.8,
-    "PR|detached": 9.9, "PR|attached": 9, "PR|apartment": 6.8,
-    "VI|detached": 9.9, "VI|attached": 9, "VI|apartment": 6.8,
 };
 
 // Other-electricity baseline (appliances/lighting/plug), GJ/household/yr. [P_OtherElec]
@@ -424,9 +487,9 @@ const OTHER_ELEC_BASE_GJ = {
     OK: 22.5, OR: 18.5, PA: 18, RI: 17, SC: 24, SD: 21.5,
     TN: 23, TX: 23, UT: 21, VT: 16.5, VA: 20, WA: 20,
     WV: 22, WI: 21, WY: 22,
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: 19, PR: 19, VI: 19,
+    PR: 18, VI: 20,
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
+    GU: 19,
 };
 
 // Household-size load factors (normalized to mean=1), RECS 2020 (CO/MI/NY/WA
@@ -455,6 +518,19 @@ const DK_SPACE_MIX = {
 const DK_WATER_MIX = {
     CANADA: {gas: 0.49,  electric: 0.492, oilprop: 0.018, hpwh: 0},
     USA:    {gas: 0.482, electric: 0.463, oilprop: 0.055, hpwh: 0},
+};
+
+// PR/VI island grids have almost no gas service, so the workbook gives them
+// their own "Don't know" mixes (every other jurisdiction matches its national
+// mix). Checked before the national tables in dkSpaceCoef/dkWaterCoef.
+// [P_DKHeat / P_DKWater rows PR, VI]
+const DK_SPACE_MIX_REGION = {
+    PR: {gas: 0.02, oilprop: 0.03, baseboard: 0.9, heatpump: 0.05, wood: 0},
+    VI: {gas: 0.02, oilprop: 0.03, baseboard: 0.9, heatpump: 0.05, wood: 0},
+};
+const DK_WATER_MIX_REGION = {
+    PR: {gas: 0.05, electric: 0.88, oilprop: 0.02, hpwh: 0.05},
+    VI: {gas: 0.05, electric: 0.88, oilprop: 0.02, hpwh: 0.05},
 };
 
 const COMBUSTION = {
@@ -665,15 +741,17 @@ const VEHICLE_FACTOR_BY_REGION = {
     WY: regionVehicleFactors({
         phev: {car: 0.086, truck: 0.119, suv: 0.119},
         battery: {car: 0.05, truck: 0.081, suv: 0.081}}),
-    /* PLACEHOLDER — no workbook data for Guam / Puerto Rico /
-       U.S. Virgin Islands. Seeded from HI. TODO: real values. */
-    GU: regionVehicleFactors({
-        phev: {car: 0.129, truck: 0.162, suv: 0.162},
-        battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
+    // PR from P_Vehicle (grid eGRID2022 PRMS; EV/PHEV grid-scaled from HI).
     PR: regionVehicleFactors({
-        phev: {car: 0.129, truck: 0.162, suv: 0.162},
-        battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
+        phev: {car: 0.14, truck: 0.176, suv: 0.176},
+        battery: {car: 0.173, truck: 0.277, suv: 0.277}}),
+    // VI has no P_Vehicle row in the 07.22 workbook — copied from PR (closest
+    // island-grid analogue) until real values land.
     VI: regionVehicleFactors({
+        phev: {car: 0.14, truck: 0.176, suv: 0.176},
+        battery: {car: 0.173, truck: 0.277, suv: 0.277}}),
+    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
+    GU: regionVehicleFactors({
         phev: {car: 0.129, truck: 0.162, suv: 0.162},
         battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
 };
@@ -694,6 +772,11 @@ const OPTIONS = {
     spaceSystem: ["naturalgas", "naturalgas", "electric", "heatpump", "oilpropane", "wood", "unknown"],
     // q18 water heating {Natural gas:1, Electric:2, Don't know:3}; blank -> naturalgas
     waterSystem: ["naturalgas", "naturalgas", "electric", "unknown"],
+    // q23 heat-pump backup {Electric:1, Natural gas:2, Oil or propane:3,
+    // None - heat pump only:4, Don't know:5}; blank -> electric. Only consulted
+    // when spaceSystem is "heatpump"; electric/none/unknown all resolve to the
+    // no-fossil-backup case (whole load on the grid at the seasonal COP).
+    backupSystem: ["electric", "electric", "naturalgas", "oilpropane", "none", "unknown"],
     // q14 windows/insulation upgraded {Yes:1, No:2, Unsure:3} -> demand multiplier; blank -> 1.0
     retrofitFactor: [1.0, 0.85, 1.0, 1.0],
     fuelType: ["", "petrol", "diesel", "hybrid", "phev", "battery"],
@@ -706,8 +789,8 @@ const OPTIONS = {
         "AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK",
         "YT"],
     // q22 state / US territory, alphabetical by full name. Index 0 is the blank
-    // fallback. Note DC (9), and the three territories with no workbook data:
-    // GU (12), PR (41), VI (47) — see PLACEHOLDER_REGIONS.
+    // fallback. Note DC (9), and Guam (12) — the one territory with no
+    // workbook data; see PLACEHOLDER_REGIONS.
     usaState: ["",
         "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "GU",
         "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI",
@@ -721,7 +804,8 @@ const OPTIONS = {
 // Jurisdictions the survey can return but the workbook has no row for. Their
 // factors above are seeded from HI so nothing evaluates to NaN.
 // TODO: replace the seeded values once real data lands.
-const PLACEHOLDER_REGIONS = ["GU", "PR", "VI"];
+// (PR and VI got real workbook rows in the 07.22 update; only Guam remains.)
+const PLACEHOLDER_REGIONS = ["GU"];
 
 // Where an unresolved region falls back to. A blank or out-of-range recode would
 // otherwise index every factor table with `undefined` and yield NaN across the
@@ -824,7 +908,10 @@ function resolveRegion(qData, isCanada, countryName) {
 }
 
 function buildSurveyState(qData) {
-    const isCanada = isFirstChoice(qData.q23);
+    // Country is q24 (QID262). q23 is the heat-pump backup question (QID529) —
+    // the 07.07 version read q23 here, a leftover from before QID529 was
+    // inserted, which classified "backup = Electric" respondents as Canadian.
+    const isCanada = isFirstChoice(qData.q24);
     const countryName = isCanada ? "CANADA" : "USA";
     const mileageType = isCanada ? "KM" : "MILES";
     const region = resolveRegion(qData, isCanada, countryName);
@@ -851,6 +938,7 @@ function buildSurveyState(qData) {
         householdSize: choiceFromTable(qData.q15, OPTIONS.householdSize),
         area: atLeastOne(qData.q16), // sqft of heated floor area
         spaceSystem: choiceFromTable(qData.q17, OPTIONS.spaceSystem),
+        backupSystem: choiceFromTable(qData.q23, OPTIONS.backupSystem),
         dwellingType: choiceFromTable(qData.q12, OPTIONS.dwellingType),
         retrofitFactor: choiceFromTable(qData.q14, OPTIONS.retrofitFactor),
         waterSystem: choiceFromTable(qData.q18, OPTIONS.waterSystem),
@@ -913,45 +1001,69 @@ function gridFactor(region) {
     return GRID_LIFECYCLE_KG_PER_GJ[region]; // kg CO2e/GJ, lifecycle
 }
 
-// Useful-heat efficiency / COP for a known space-heating system.
+// Useful-heat efficiency / COP for a known space-heating system. Heat pumps
+// normally route through heatPumpSpaceKg (backup-aware); the branch here is the
+// no-fossil-backup seasonal COP, kept so no caller can fall through to 1.0.
 function spaceEfficiency(system, region) {
     if (system === "naturalgas") return GAS_EFFICIENCY[region];
-    if (system === "heatpump") return HEATPUMP_COP[region];
+    if (system === "heatpump") return HEATPUMP[region].cop;
     if (system === "oilpropane") return SPACE_EFF_OILPROP;
     if (system === "wood") return SPACE_EFF_WOOD;
     return SPACE_EFF_ELECTRIC; // electric baseboard
 }
 
-// kg CO2e/GJ of delivered fuel for a known space-heating system. Electricity
-// systems (baseboard, heat pump) bill at the regional grid factor.
+// kg CO2e/GJ of delivered fuel for a known space-heating system. Electric
+// baseboard bills at the regional grid factor; heat pumps are handled by
+// heatPumpSpaceKg, which also prices any fossil backup fuel.
 function spaceFuelFactor(system, region) {
     if (system === "naturalgas") return FUEL_NG;
     if (system === "oilpropane") return FUEL_OILPROP;
     if (system === "wood") return FUEL_WOOD;
-    return gridFactor(region); // electric, heatpump
+    return gridFactor(region); // electric
 }
 
 // "Don't know" space heating: expected kg per GJ of useful heat across the
 // national system mix = Sum(share * fuelFactor / efficiency). [P_DKHeat col K]
 function dkSpaceCoef(region, countryName) {
-    const w = DK_SPACE_MIX[countryName] || DK_SPACE_MIX.CANADA;
+    const w = DK_SPACE_MIX_REGION[region] ||
+        DK_SPACE_MIX[countryName] || DK_SPACE_MIX.CANADA;
     const grid = gridFactor(region);
     return w.gas * (FUEL_NG / GAS_EFFICIENCY[region]) +
         w.oilprop * (FUEL_OILPROP / SPACE_EFF_OILPROP) +
         w.baseboard * grid +
-        w.heatpump * (grid / HEATPUMP_COP[region]) +
+        w.heatpump * (grid / HEATPUMP[region].cop) +
         w.wood * (FUEL_WOOD / SPACE_EFF_WOOD);
 }
 
 // "Don't know" water heating: expected kg per GJ of useful hot water across the
 // national mix = Sum(share * fuelFactor / efficiency). [P_DKWater col H]
 function dkWaterCoef(region, countryName) {
-    const w = DK_WATER_MIX[countryName] || DK_WATER_MIX.CANADA;
+    const w = DK_WATER_MIX_REGION[region] ||
+        DK_WATER_MIX[countryName] || DK_WATER_MIX.CANADA;
     const grid = gridFactor(region);
     return w.gas * (FUEL_NG / WATER_EFF.naturalgas) +
         w.electric * (grid / WATER_EFF.electric) +
         w.oilprop * (FUEL_OILPROP / WATER_EFF.oilpropane) +
         w.hpwh * (grid / WATER_EFF.heatpump);
+}
+
+// Heat pump with an optional fossil backup furnace [Calculator K24:L32]:
+//   E = f_hp * (D / COP_op) * grid + (1 - f_hp) * (D / eff_backup) * EF_backup
+// The heat pump carries f_hp of the useful demand at its operating COP; the
+// backup furnace burns fuel for the load below the switchover temperature.
+// Electric / none / unknown backups collapse to the whole load on the grid at
+// the jurisdiction seasonal COP (resistance top-up is baked into that COP).
+function heatPumpSpaceKg(usefulGJ, backupSystem, region) {
+    const hp = HEATPUMP[region];
+    if (backupSystem === "naturalgas") {
+        return usefulGJ * hp.fhpGas / hp.copGas * gridFactor(region) +
+            usefulGJ * (1 - hp.fhpGas) / GAS_EFFICIENCY[region] * FUEL_NG;
+    }
+    if (backupSystem === "oilpropane") {
+        return usefulGJ * hp.fhpOil / hp.copOil * gridFactor(region) +
+            usefulGJ * (1 - hp.fhpOil) / SPACE_EFF_OILPROP * FUEL_OILPROP;
+    }
+    return usefulGJ / hp.cop * gridFactor(region);
 }
 
 function spaceHeatingKg(heating, region, countryName) {
@@ -961,6 +1073,9 @@ function spaceHeatingKg(heating, region, countryName) {
         ENVELOPE_FACTOR[heating.dwellingType] * heating.retrofitFactor;
     if (heating.spaceSystem === "unknown") {
         return usefulGJ * dkSpaceCoef(region, countryName);
+    }
+    if (heating.spaceSystem === "heatpump") {
+        return heatPumpSpaceKg(usefulGJ, heating.backupSystem, region);
     }
     const fuelGJ = usefulGJ / spaceEfficiency(heating.spaceSystem, region);
     return fuelGJ * spaceFuelFactor(heating.spaceSystem, region);
