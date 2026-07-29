@@ -15,7 +15,7 @@ A prototype of the stronger behavioral measure of carbon-tax support: instead of
 ## Run it locally
 
 ```
-cd letter-campaign
+cd prototypes/letter-campaign
 python -m http.server 8000
 # open http://localhost:8000/  (localhost counts as a secure context, so clipboard works)
 ```
