@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Write to Your Representative</title>
+<style>
+  :root { --accent: #1a6b4a; --accent-dark: #125137; --err: #a33; --muted: #666; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 1.5rem 1rem 4rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #222; background: #f7f7f5; line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+  .subtitle { color: var(--muted); margin: 0 0 1.5rem; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .hidden { display: none !important; }
+  button {
+    font: inherit; border: 0; border-radius: 8px; cursor: pointer;
+    padding: 0.7rem 1.2rem; background: var(--accent); color: #fff; font-weight: 600;
+  }
+  button:hover:not(:disabled) { background: var(--accent-dark); }
+  button:disabled { background: #bbb; cursor: not-allowed; }
+  button.secondary { background: #eee; color: #222; font-weight: 500; }
+  button.secondary:hover { background: #ddd; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #7fb8a2; outline-offset: 2px; }
+  .country-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .country-buttons button { flex: 1 1 200px; padding: 1.1rem; font-size: 1.05rem; }
+  label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+  input[type=text] {
+    font: inherit; width: 100%; padding: 0.6rem 0.7rem;
+    border: 1px solid #bbb; border-radius: 8px;
+  }
+  .row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1 1 220px; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin-top: 0.35rem; }
+  .error { color: var(--err); }
+  .rep-card { display: flex; gap: 0.9rem; align-items: center; }
+  .rep-card img { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; background: #eee; }
+  .rep-card .who strong { font-size: 1.05rem; }
+  .letter {
+    white-space: pre-wrap; background: #fdfcf8; border: 1px solid #e2ddcf;
+    border-radius: 8px; padding: 1rem 1.1rem; font-family: Georgia, "Times New Roman", serif;
+    margin: 0.75rem 0 1rem;
+  }
+  .privacy-note {
+    font-size: 0.85rem; background: #eef5f1; border-radius: 8px;
+    padding: 0.55rem 0.8rem; margin: 0.5rem 0 1rem;
+  }
+  ol.steps { padding-left: 1.2rem; }
+  ol.steps li { margin-bottom: 0.4rem; }
+  .choice-list label { font-weight: 500; display: flex; gap: 0.5rem; align-items: baseline; margin: 0.35rem 0; }
+  .linkish { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; font-weight: 500; }
+  textarea.fallback { width: 100%; font: inherit; min-height: 10rem; margin-top: 0.5rem; }
+  .spinner { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Write to your representative</h1>
+  <p class="subtitle">Add your name to a prepared letter about carbon pricing and send it directly to the person who represents you.</p>
+
+  <!-- STEP 1: country -->
+  <section id="step-country" class="card">
+    <p><strong>Where do you live?</strong></p>
+    <div class="country-buttons">
+      <button id="btn-ca" type="button">&#127464;&#127462; Canada</button>
+      <button id="btn-us" type="button">&#127482;&#127480; United States</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: location + lookup -->
+  <section id="step-lookup" class="card hidden">
+    <button class="linkish" id="change-country" type="button">&larr; change country</button>
+    <div class="row" style="margin-top:0.6rem">
+      <div>
+        <label id="code-label" for="code-input">Postal code</label>
+        <input id="code-input" type="text" autocomplete="postal-code" placeholder="K1A 0A6">
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="btn-lookup" type="button">Find my representative</button>
+      </div>
+    </div>
+    <p class="hint">Used only to look up your representative &mdash; it is not stored and never sent to the researchers.</p>
+    <p id="lookup-status" class="hint hidden" aria-live="polite"></p>
+
+    <div id="rep-chooser" class="choice-list hidden">
+      <p><strong>Your postal code touches more than one district &mdash; please pick yours:</strong></p>
+      <div id="rep-chooser-options"></div>
+      <button id="btn-choose-rep" type="button">This is my representative</button>
+    </div>
+
+    <div id="rep-result" class="hidden">
+      <div class="rep-card">
+        <img id="rep-photo" alt="" onerror="this.style.visibility='hidden'">
+        <div class="who">
+          <strong id="rep-name"></strong><br>
+          <span id="rep-detail" class="hint"></span>
+        </div>
+      </div>
+      <p class="hint">
+        Not your district? <a id="manual-lookup-link" href="#" target="_blank" rel="noopener">Look up manually</a>
+        &middot; <button class="linkish" id="btn-retry" type="button">try a different code</button>
+      </p>
+      <button id="btn-to-letter" type="button">Continue to the letter</button>
+    </div>
+
+    <div id="lookup-error" class="hidden">
+      <p class="error" id="lookup-error-msg"></p>
+      <p>You can still continue &mdash; find your representative yourself, or send the letter with a general greeting:</p>
+      <ul id="manual-links"></ul>
+      <div id="manual-email-wrap" class="hidden" style="margin-bottom:0.75rem">
+        <label for="manual-email">Your MP&rsquo;s email address (optional)</label>
+        <input id="manual-email" type="text" placeholder="firstname.lastname@parl.gc.ca">
+      </div>
+      <button id="btn-continue-generic" type="button" class="secondary">Continue without automatic lookup</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: sign -->
+  <section id="step-sign" class="card hidden">
+    <p><strong>Your letter</strong> <span class="hint">(prepared for you &mdash; just add your name)</span></p>
+    <div id="letter-preview" class="letter"></div>
+    <label for="name-input">Your name</label>
+    <input id="name-input" type="text" autocomplete="name" placeholder="Type your full name to sign">
+    <p class="privacy-note">&#128274; Your name is added to the letter only. It is <strong>never seen by or sent to the researchers</strong> &mdash; the letter goes directly from you to your representative.</p>
+    <button id="btn-send" type="button" disabled>Sign &amp; send</button>
+  </section>
+
+  <!-- STEP 4: confirmation -->
+  <section id="step-done" class="card hidden">
+    <div id="done-ca" class="hidden">
+      <p><strong>&#9993;&#65039; Your email app should now be open</strong> with the signed letter addressed to <span id="done-ca-rep"></span>. Press <em>Send</em> there to deliver it.</p>
+      <p><strong>Nothing happened?</strong> Your device may not have an email app set up. Use your webmail (Gmail, Outlook&hellip;) instead:</p>
+      <p>
+        <button id="btn-copy-email" type="button" class="secondary">Copy your MP&rsquo;s email address</button>
+        <button id="btn-copy-letter-ca" type="button" class="secondary">Copy the signed letter</button>
+      </p>
+      <p class="hint" id="copy-feedback-ca" aria-live="polite"></p>
+    </div>
+    <div id="done-us" class="hidden">
+      <p><strong>&#9989; Your signed letter has been copied</strong> to your clipboard.</p>
+      <ol class="steps">
+        <li>A new tab has opened with <span id="done-us-rep"></span>&rsquo;s official website. <span id="popup-blocked-note" class="hidden">If it didn&rsquo;t open, <a id="done-us-link" href="#" target="_blank" rel="noopener">click here</a>.</span></li>
+        <li>Find the <em>&ldquo;Contact&rdquo;</em> or <em>&ldquo;Email me&rdquo;</em> form (offices ask for your address to confirm you&rsquo;re a constituent).</li>
+        <li>Paste the letter into the message box and submit.</li>
+      </ol>
+      <div id="clipboard-fallback" class="hidden">
+        <p class="error">We couldn&rsquo;t access your clipboard &mdash; copy the letter below:</p>
+        <textarea class="fallback" id="fallback-textarea" readonly></textarea>
+        <button id="btn-select-copy" type="button" class="secondary">Select all &amp; copy</button>
+        <p class="hint" id="copy-feedback-us" aria-live="polite"></p>
+      </div>
+    </div>
+    <p style="margin-top:1rem">Thank you. You can now close this tab.</p>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   PROTOTYPE — letter-to-representative page.
+   Scale-up items (anonymous count logging, hosting, Qualtrics
+   link wiring, finalized letter text) are listed in README.md.
+   ============================================================ */
+
+/* --- PI-editable letter templates.
+   NOTE: the Canadian subject+body (with a typical name substituted) must stay
+   under ~1800 URL-encoded characters — mailto: links beyond ~2000 chars are
+   truncated or dropped by some mail clients. --- */
+var LETTERS = {
+  ca: {
+    subject: "Please support carbon pricing",
+    body: "{{SALUTATION}}\r\n\r\n" +
+      "As a constituent, I am writing to ask you to support strong, fair carbon pricing in Canada.\r\n\r\n" +
+      "Putting a clear price on carbon pollution is widely regarded by economists as one of the most effective and lowest-cost ways to reduce emissions. When revenues are returned to households, most families come out ahead while cleaner choices become more affordable for everyone.\r\n\r\n" +
+      "Climate change is already imposing real costs on our communities. I ask you to defend and strengthen carbon pricing, and to support returning its revenues transparently to Canadians.\r\n\r\n" +
+      "Thank you for representing our community and for considering my views.\r\n\r\n" +
+      "Sincerely,\r\n{{SIGNER_NAME}}"
+  },
+  us: {
+    subject: "Please support a price on carbon",
+    body: "{{SALUTATION}}\r\n\r\n" +
+      "As your constituent, I am writing to ask you to support putting a price on carbon pollution.\r\n\r\n" +
+      "A carbon fee with revenues returned to households is widely regarded by economists as one of the most effective and lowest-cost ways to cut emissions. It rewards clean energy innovation while protecting family budgets.\r\n\r\n" +
+      "Climate change is already imposing real costs on our communities. I ask you to support carbon pricing legislation that returns revenues directly to the American people.\r\n\r\n" +
+      "Thank you for representing our community and for considering my views.\r\n\r\n" +
+      "Sincerely,\r\n{{SIGNER_NAME}}"
+  }
+};
+
+/* --- Config (split into config.js at scale-up). 5 Calls key is free:
+   https://5calls.org/representatives-api/ . Blank key => US lookup shows
+   the manual-fallback panel, page remains usable. --- */
+var FIVE_CALLS_API_KEY = "";
+
+var MANUAL_LINKS = {
+  ca: [
+    { label: "Find your MP on the Represent lookup", url: "https://represent.opennorth.ca/demo/" },
+    { label: "Search MPs on ourcommons.ca", url: "https://www.ourcommons.ca/members/en/search" }
+  ],
+  us: [
+    { label: "house.gov: find your representative", url: "https://www.house.gov/representatives/find-your-representative" },
+    { label: "senate.gov: contact your senators", url: "https://www.senate.gov/senators/senators-contact.htm" }
+  ]
+};
+
+var state = {
+  country: null,      // "ca" | "us"
+  rep: null,          // chosen representative object (normalized)
+  candidates: [],     // multi-district candidates
+  manualEmail: null,  // CA manual fallback email
+  generic: false      // true when proceeding without a lookup
+};
+
+/* Placeholder for the future anonymous aggregate counter
+   (POST {country, event} only — no name, no postal code, no respondent ID). */
+function logEvent(evt) { console.log("[logEvent stub]", state.country || "unknown", evt); }
+
+function $(id) { return document.getElementById(id); }
+function show(el) { el.classList.remove("hidden"); }
+function hide(el) { el.classList.add("hidden"); }
+function showStep(id) {
+  ["step-country", "step-lookup", "step-sign", "step-done"].forEach(function (s) {
+    (s === id ? show : hide)($(s));
+  });
+}
+
+/* ---------- Step 1: country ---------- */
+function setCountry(c) {
+  state.country = c;
+  state.rep = null; state.generic = false; state.manualEmail = null;
+  $("code-label").textContent = c === "ca" ? "Postal code" : "ZIP code";
+  $("code-input").placeholder = c === "ca" ? "K1A 0A6" : "90210";
+  $("code-input").value = "";
+  hide($("rep-result")); hide($("lookup-error")); hide($("rep-chooser")); hide($("lookup-status"));
+  showStep("step-lookup");
+  logEvent("page_opened");
+}
+$("btn-ca").addEventListener("click", function () { setCountry("ca"); });
+$("btn-us").addEventListener("click", function () { setCountry("us"); });
+$("change-country").addEventListener("click", function () { showStep("step-country"); });
+
+/* Honors the future Qualtrics piped-text link:
+   ?country=${q://QID262/SelectedChoicesRecode} resolves to 1 (Canada) or 2 (USA). */
+(function initFromQuery() {
+  var q = (new URLSearchParams(location.search).get("country") || "").toLowerCase();
+  if (q === "1" || q === "ca" || q === "canada") setCountry("ca");
+  else if (q === "2" || q === "us" || q === "usa") setCountry("us");
+})();
+
+/* ---------- Step 2: lookup ---------- */
+function setStatus(msg, isError) {
+  var el = $("lookup-status");
+  el.textContent = msg; el.className = "hint" + (isError ? " error" : " spinner");
+  show(el);
+}
+
+function showLookupError(msg) {
+  hide($("rep-result")); hide($("rep-chooser")); hide($("lookup-status"));
+  $("lookup-error-msg").textContent = msg;
+  var ul = $("manual-links"); ul.innerHTML = "";
+  MANUAL_LINKS[state.country].forEach(function (l) {
+    var li = document.createElement("li");
+    var a = document.createElement("a");
+    a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = l.label;
+    li.appendChild(a); ul.appendChild(li);
+  });
+  (state.country === "ca" ? show : hide)($("manual-email-wrap"));
+  show($("lookup-error"));
+  logEvent("lookup_failed");
+}
+
+function normalizeCaRep(o) {
+  return {
+    name: o.name, lastName: o.last_name || o.name.split(" ").pop(),
+    party: o.party_name, district: o.district_name,
+    email: (o.email || "").trim(), url: o.url, photo: o.photo_url, office: "MP"
+  };
+}
+
+function showRep(rep) {
+  state.rep = rep;
+  hide($("rep-chooser")); hide($("lookup-error")); hide($("lookup-status"));
+  $("rep-name").textContent = rep.office === "MP"
+    ? "Your MP: " + rep.name
+    : "Your Representative: " + rep.name;
+  $("rep-detail").textContent = (rep.party ? rep.party + ", " : "") +
+    (rep.office === "MP" ? "riding of " + rep.district : rep.district);
+  if (rep.photo) { $("rep-photo").src = rep.photo; $("rep-photo").style.visibility = "visible"; }
+  else { $("rep-photo").removeAttribute("src"); $("rep-photo").style.visibility = "hidden"; }
+  $("manual-lookup-link").href = MANUAL_LINKS[state.country][0].url;
+  show($("rep-result"));
+  logEvent("rep_found");
+}
+
+function showChooser(candidates) {
+  state.candidates = candidates;
+  hide($("rep-result")); hide($("lookup-error")); hide($("lookup-status"));
+  var wrap = $("rep-chooser-options"); wrap.innerHTML = "";
+  candidates.forEach(function (c, i) {
+    var label = document.createElement("label");
+    var radio = document.createElement("input");
+    radio.type = "radio"; radio.name = "rep-choice"; radio.value = String(i);
+    if (i === 0) radio.checked = true;
+    label.appendChild(radio);
+    label.appendChild(document.createTextNode(" " + c.name + " (" + c.party + ") — " + c.district));
+    wrap.appendChild(label);
+  });
+  show($("rep-chooser"));
+}
+$("btn-choose-rep").addEventListener("click", function () {
+  var sel = document.querySelector('input[name="rep-choice"]:checked');
+  showRep(state.candidates[sel ? +sel.value : 0]);
+});
+
+function fetchWithTimeout(url, opts) {
+  var ctrl = new AbortController();
+  var t = setTimeout(function () { ctrl.abort(); }, 10000);
+  opts = opts || {}; opts.signal = ctrl.signal;
+  return fetch(url, opts).finally(function () { clearTimeout(t); });
+}
+
+function lookupCanada(code) {
+  /* Represent API by Open North — free, no auth, CORS-enabled.
+     representatives_concordance (exact postal-code match) is preferred over
+     representatives_centroid (district containing the code's centre point). */
+  return fetchWithTimeout("https://represent.opennorth.ca/postcodes/" + encodeURIComponent(code) + "/")
+    .then(function (r) {
+      if (r.status === 404) throw new Error("That postal code was not found.");
+      if (!r.ok) throw new Error("The representative lookup service returned an error (" + r.status + ").");
+      return r.json();
+    })
+    .then(function (d) {
+      var pool = (d.representatives_concordance && d.representatives_concordance.length
+        ? d.representatives_concordance : d.representatives_centroid) || [];
+      var mps = pool.filter(function (o) { return o.elected_office === "MP"; }).map(normalizeCaRep);
+      if (!mps.length) throw new Error("We couldn't find an MP for that postal code.");
+      if (mps.length > 1) showChooser(mps); else showRep(mps[0]);
+    });
+}
+
+function lookupUS(zip) {
+  /* 5 Calls representatives API — free key required (X-5Calls-Token). */
+  if (!FIVE_CALLS_API_KEY) {
+    showLookupError("Automatic lookup isn't configured yet for the United States.");
+    return Promise.resolve();
+  }
+  return fetchWithTimeout("https://api.5calls.org/v1/representatives?location=" + encodeURIComponent(zip),
+    { headers: { "X-5Calls-Token": FIVE_CALLS_API_KEY } })
+    .then(function (r) {
+      if (!r.ok) throw new Error("The representative lookup service returned an error (" + r.status + ").");
+      return r.json();
+    })
+    .then(function (d) {
+      var reps = (d.representatives || []).map(function (o) {
+        return {
+          name: o.name, lastName: o.name.split(" ").pop(), party: o.party,
+          district: o.area === "US House" ? "House district " + (d.state || "") + "-" + (d.district || "") : (d.state || "") + " (Senate)",
+          email: "", url: o.url, photo: o.photoURL,
+          office: o.area === "US House" ? "Representative" : "Senator"
+        };
+      });
+      var house = reps.filter(function (r2) { return r2.office === "Representative"; });
+      if (!house.length) throw new Error("We couldn't find a House representative for that ZIP code.");
+      if (house.length > 1 || d.lowAccuracy) showChooser(house); else showRep(house[0]);
+    });
+}
+
+$("btn-lookup").addEventListener("click", function () {
+  var raw = $("code-input").value.trim().toUpperCase();
+  hide($("rep-result")); hide($("lookup-error")); hide($("rep-chooser"));
+  var task;
+  if (state.country === "ca") {
+    var code = raw.replace(/\s+/g, "");
+    if (!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(code)) { setStatus("Please enter a valid postal code, e.g. K1A 0A6.", true); return; }
+    setStatus("Looking up your MP\u2026");
+    task = lookupCanada(code);
+  } else {
+    var m = raw.match(/^(\d{5})(-?\d{4})?$/);
+    if (!m) { setStatus("Please enter a valid 5-digit ZIP code.", true); return; }
+    setStatus("Looking up your representative\u2026");
+    task = lookupUS(m[1]);
+  }
+  var btn = $("btn-lookup"); btn.disabled = true;
+  task.catch(function (e) {
+    var msg;
+    if (e.name === "AbortError") msg = "The lookup timed out. Please try again.";
+    else if (e.name === "TypeError") msg = "We couldn't reach the representative lookup service, or the code wasn't recognized.";
+    else msg = e.message;
+    showLookupError(msg);
+  }).finally(function () { btn.disabled = false; });
+});
+$("code-input").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btn-lookup").click(); });
+$("btn-retry").addEventListener("click", function () {
+  hide($("rep-result")); $("code-input").value = ""; $("code-input").focus();
+});
+
+$("btn-continue-generic").addEventListener("click", function () {
+  state.generic = true;
+  state.manualEmail = state.country === "ca" ? $("manual-email").value.trim() : null;
+  state.rep = null;
+  goToLetter();
+});
+$("btn-to-letter").addEventListener("click", goToLetter);
+
+/* ---------- Step 3: sign ---------- */
+function salutation() {
+  if (state.generic || !state.rep) {
+    return state.country === "ca" ? "Dear Member of Parliament," : "Dear Representative,";
+  }
+  if (state.country === "ca") return "Dear " + state.rep.name + ", MP for " + state.rep.district + ",";
+  return "Dear " + (state.rep.office === "Senator" ? "Senator " : "Representative ") + state.rep.lastName + ",";
+}
+
+function buildLetter(name) {
+  return LETTERS[state.country].body
+    .split("{{SALUTATION}}").join(salutation())
+    .split("{{SIGNER_NAME}}").join(name || "[your name]");
+}
+
+function renderLetter() { $("letter-preview").textContent = buildLetter($("name-input").value.trim()); }
+
+function goToLetter() {
+  renderLetter();
+  $("btn-send").disabled = !$("name-input").value.trim();
+  showStep("step-sign");
+}
+$("name-input").addEventListener("input", function () {
+  renderLetter();
+  $("btn-send").disabled = !this.value.trim();
+});
+
+/* ---------- Step 4: send ---------- */
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return legacyCopy(text); });
+  }
+  return Promise.resolve(legacyCopy(text));
+}
+function legacyCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+$("btn-send").addEventListener("click", function () {
+  var name = $("name-input").value.trim();
+  if (!name) return;
+  var letter = buildLetter(name);
+  logEvent("send_clicked");
+
+  if (state.country === "ca") {
+    var email = state.rep ? state.rep.email : (state.manualEmail || "");
+    $("done-ca-rep").textContent = state.rep ? state.rep.name : "your MP";
+    show($("done-ca")); hide($("done-us"));
+    showStep("step-done");
+    $("btn-copy-email").onclick = function () {
+      copyText(email || "").then(function (ok) {
+        $("copy-feedback-ca").textContent = ok && email ? "Email address copied: " + email : (email || "No email address available — use the manual lookup links.");
+      });
+    };
+    $("btn-copy-letter-ca").onclick = function () {
+      copyText("Subject: " + LETTERS.ca.subject + "\r\n\r\n" + letter).then(function (ok) {
+        $("copy-feedback-ca").textContent = ok ? "Letter copied to clipboard." : "Copy failed — select the letter text manually.";
+      });
+    };
+    if (email) {
+      location.href = "mailto:" + encodeURIComponent(email) +
+        "?subject=" + encodeURIComponent(LETTERS.ca.subject) +
+        "&body=" + encodeURIComponent(letter);
+    }
+  } else {
+    /* Open the tab synchronously inside the click gesture (popup-blocker-safe),
+       then copy, then point the tab at the rep's official site. */
+    var targetUrl = state.rep ? state.rep.url : MANUAL_LINKS.us[0].url;
+    var win = null;
+    try { win = window.open("about:blank", "_blank"); } catch (e) { win = null; }
+    $("done-us-rep").textContent = state.rep ? state.rep.name : "your representative";
+    $("done-us-link").href = targetUrl;
+    copyText("Subject: " + LETTERS.us.subject + "\r\n\r\n" + letter).then(function (ok) {
+      if (!ok) {
+        $("fallback-textarea").value = letter;
+        show($("clipboard-fallback"));
+        $("btn-select-copy").onclick = function () {
+          $("fallback-textarea").select();
+          var did = false;
+          try { did = document.execCommand("copy"); } catch (e) { did = false; }
+          $("copy-feedback-us").textContent = did ? "Copied." : "Please copy the selected text with Ctrl/Cmd+C.";
+        };
+      } else { hide($("clipboard-fallback")); }
+      if (win) { win.location = targetUrl; hide($("popup-blocked-note")); }
+      else { show($("popup-blocked-note")); }
+      show($("done-us")); hide($("done-ca"));
+      showStep("step-done");
+    });
+  }
+});
+</script>
+</body>
+</html>
