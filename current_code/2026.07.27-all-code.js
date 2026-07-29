@@ -32,7 +32,7 @@ const qData = {
 
 // Chart Benchmarks (tonnes C02e per person per year)
 const GLOBAL_AVERAGE_TONNES = 2.9; // displayed/labelled as 2.9
-const SUSTAINABLE_TARGET_TONNES = 2.5;
+const SUSTAINABLE_TARGET_TONNES = 1.6; // newly changed 
 const ADDITIONAL_FLIGHT_TONNES = 3.0;
 
 // Average annual driving distance (km) used by the Avg_Gas_CF counterfactual.
@@ -118,8 +118,6 @@ const GRID_LIFECYCLE_KG_PER_GJ = {
     // PR (eGRID2022 PRMS) / VI (WAPA, oil-fired) [P_EF_Elec 07.22 workbook]:
     // g/kWh x 0.277778 / (1 - grid loss) + upstream.
     PR: 236.539179, VI: 251.541553,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    GU: 193.792284,
 };
 
 // Gas-furnace seasonal efficiency, province/state-specific. [P_GasEff]
@@ -139,8 +137,6 @@ const GAS_EFFICIENCY = {
     TN: 0.85, TX: 0.85, UT: 0.85, VT: 0.85, VA: 0.85, WA: 0.85,
     WV: 0.85, WI: 0.85, WY: 0.85,
     PR: 0.85, VI: 0.85,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    GU: 0.85,
 };
 
 // Air-source heat-pump performance, jurisdiction-specific. [P_HPcop cols B-F]
@@ -222,8 +218,6 @@ const HEATPUMP = {
     WY: {cop: 1.8, fhpGas: 0.503, copGas: 2.097, fhpOil: 0.999, copOil: 1.801},
     PR: {cop: 2.751, fhpGas: 1, copGas: 2.751, fhpOil: 1, copOil: 2.751},
     VI: {cop: 2.751, fhpGas: 1, copGas: 2.751, fhpOil: 1, copOil: 2.751},
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    GU: {cop: 2.727, fhpGas: 1, copGas: 2.727, fhpOil: 1, copOil: 2.727},
 };
 
 // Lifecycle fuel emission factors, kg CO2e/GJ (combustion + upstream). [P_EF_Fuel]
@@ -318,8 +312,6 @@ const SPACE_DEMAND_GJ_PER_M2 = {
     // Tropical territories — space heating essentially zero.
     "PR|pre-1960": 0.01, "PR|1960-1983": 0.007, "PR|1984-1999": 0.005, "PR|2000+": 0.004,
     "VI|pre-1960": 0.01, "VI|1960-1983": 0.007, "VI|1984-1999": 0.005, "VI|2000+": 0.004,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    "GU|pre-1960": 0.028, "GU|1960-1983": 0.021, "GU|1984-1999": 0.014, "GU|2000+": 0.011,
 };
 
 // Air-conditioning electricity intensity (GJ/m2/yr), keyed "REGION|vintage". [P_Cooling]
@@ -392,8 +384,6 @@ const COOLING_INTENSITY_GJ_PER_M2 = {
     "WY|pre-1960": 0.034, "WY|1960-1983": 0.026, "WY|1984-1999": 0.019, "WY|2000+": 0.016,
     "PR|pre-1960": 0.229, "PR|1960-1983": 0.176, "PR|1984-1999": 0.128, "PR|2000+": 0.106,
     "VI|pre-1960": 0.229, "VI|1960-1983": 0.176, "VI|1984-1999": 0.128, "VI|2000+": 0.106,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    "GU|pre-1960": 0.191, "GU|1960-1983": 0.147, "GU|1984-1999": 0.107, "GU|2000+": 0.088,
 };
 
 // Water-heating useful demand U (GJ/household/yr), keyed "REGION|dwelling".
@@ -467,8 +457,6 @@ const WATER_DEMAND_GJ_PER_HH = {
     "WY|detached": 14.9, "WY|attached": 13.5, "WY|apartment": 10.1,
     "PR|detached": 8.9, "PR|attached": 8.1, "PR|apartment": 6.1,
     "VI|detached": 8.9, "VI|attached": 8.1, "VI|apartment": 6.1,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    "GU|detached": 9.9, "GU|attached": 9, "GU|apartment": 6.8,
 };
 
 // Other-electricity baseline (appliances/lighting/plug), GJ/household/yr. [P_OtherElec]
@@ -488,8 +476,6 @@ const OTHER_ELEC_BASE_GJ = {
     TN: 23, TX: 23, UT: 21, VT: 16.5, VA: 20, WA: 20,
     WV: 22, WI: 21, WY: 22,
     PR: 18, VI: 20,
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    GU: 19,
 };
 
 // Household-size load factors (normalized to mean=1), RECS 2020 (CO/MI/NY/WA
@@ -750,10 +736,6 @@ const VEHICLE_FACTOR_BY_REGION = {
     VI: regionVehicleFactors({
         phev: {car: 0.14, truck: 0.176, suv: 0.176},
         battery: {car: 0.173, truck: 0.277, suv: 0.277}}),
-    /* PLACEHOLDER — no workbook data for Guam. Seeded from HI. TODO: real values. */
-    GU: regionVehicleFactors({
-        phev: {car: 0.129, truck: 0.162, suv: 0.162},
-        battery: {car: 0.147, truck: 0.236, suv: 0.236}}),
 };
 
 /* =========================================================================
@@ -789,10 +771,11 @@ const OPTIONS = {
         "AB", "BC", "MB", "NB", "NL", "NT", "NS", "NU", "ON", "PE", "QC", "SK",
         "YT"],
     // q22 state / US territory, alphabetical by full name. Index 0 is the blank
-    // fallback. Note DC (9), and Guam (12) — the one territory with no
-    // workbook data; see PLACEHOLDER_REGIONS.
+    // fallback. Note DC (9). Index 12 was Guam, since removed from the survey;
+    // Qualtrics keeps the remaining choices' recode values, so the slot stays
+    // reserved (a stale recode 12 falls back via resolveRegion).
     usaState: ["",
-        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "GU",
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "",
         "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI",
         "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND",
         "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "VI", "UT",
@@ -800,12 +783,6 @@ const OPTIONS = {
     // q15 {1..9+}; recode 9 = "9+"; blank -> 1
     householdSize: [1, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 };
-
-// Jurisdictions the survey can return but the workbook has no row for. Their
-// factors above are seeded from HI so nothing evaluates to NaN.
-// TODO: replace the seeded values once real data lands.
-// (PR and VI got real workbook rows in the 07.22 update; only Guam remains.)
-const PLACEHOLDER_REGIONS = ["GU"];
 
 // Where an unresolved region falls back to. A blank or out-of-range recode would
 // otherwise index every factor table with `undefined` and yield NaN across the
@@ -900,9 +877,6 @@ function resolveRegion(qData, isCanada, countryName) {
         console.warn("Unresolved region for " + countryName +
             " (q21=" + qData.q21 + ", q22=" + qData.q22 + ") — falling back to " + fallback);
         return fallback;
-    }
-    if (PLACEHOLDER_REGIONS.indexOf(region) !== -1) {
-        console.warn("Region " + region + " is using placeholder factors seeded from HI.");
     }
     return region;
 }
