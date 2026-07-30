@@ -1,0 +1,9 @@
+# Never commit credentials
+api-test/.env
+
+# Local artifacts from API experiments
+api-test/snapshots/
+api-test/library_id.txt
+
+# OS noise
+.DS_Store
