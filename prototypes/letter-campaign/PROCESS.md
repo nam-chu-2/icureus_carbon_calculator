@@ -1,6 +1,6 @@
 # How this prototype was built — research, decisions, and verification
 
-Documentation of the exploration requested in the PI's email ("explore how to build this" — replacing the petition with a letter-to-representative measure) and of what was actually done, July 28–29, 2026.
+Documentation of the exploration requested in the PI's email ("explore how to build this" — replacing the petition with a letter-to-representative measure) and of what was actually done, July 28–30, 2026.
 
 ## 1. The request
 
@@ -27,8 +27,8 @@ The PI's proposed mechanism: "grab the emails of these representatives from the 
 | Decision | Choice | Rationale |
 |---|---|---|
 | Countries | Canada + US | Matches the survey population |
-| US send mechanism | Clipboard-copy + open the member's official contact webform | Only honest option given no public emails; uses the official channel; name still never touches researcher infrastructure |
-| Measurement | **Aggregate anonymous counts only** — no ResponseID, no per-respondent linkage | Chosen over ResponseID-linked event logging for stronger anonymity |
+| US send mechanism | ~~Clipboard-copy + open the member's official contact webform~~ → **redirect only** (superseded 2026-07-30, see §7) | Only honest option given no public emails; uses the official channel |
+| Measurement | ~~Aggregate anonymous counts only~~ → **Prolific-ID-linked events** (superseded 2026-07-30, see §7) | PI requires per-respondent link/send counts |
 | Scope | **Prototype first, scale later** | Validate the risky mechanics (client-side lookup, mailto send, anonymity) before investing in hosting/logging/Qualtrics wiring |
 
 ## 4. What was built
@@ -55,4 +55,13 @@ Served locally (`python -m http.server`) and driven end-to-end in Chrome:
 
 ## 6. Not done yet (scale-up phase — see README.md)
 
-Anonymous count logging (Apps Script → Google Sheet), hosting (GitHub Pages; note it publishes the whole repo), the actual Qualtrics link, the free 5 Calls API key, PI-finalized letter text, a French letter for Quebec ridings, and — a **launch blocker** — IRB/ethics sign-off for facilitated political advocacy. Also note for any write-up: the future `send_clicked` count measures *attempted* sends, not confirmed delivery, and identical form letters may be discounted by offices.
+Hosting (GitHub Pages; note it publishes the whole repo), deploying `logger.gs`, pasting the Qualtrics material from `qualtrics-integration.md`, the free 5 Calls API key, PI-finalized letter text, a French letter for Quebec ridings, and — a **launch blocker** — IRB/ethics sign-off for facilitated political advocacy. Also note for any write-up: the `send_clicked` count measures *attempted* sends, not confirmed delivery, and identical form letters may be discounted by offices.
+
+## 7. Measurement round 2 (2026-07-30, PI request)
+
+The PI added two measurement requirements after the initial prototype, both implemented:
+
+1. **Canada** — count link clicks *and* Sign & send clicks, each **linked to the respondent's Prolific ID**. Implemented as `page_opened` / `send_clicked` events posted to a Google Apps Script web app (`logger.gs`) that appends `[server_time, pid, country, event, client_time]` to a Google Sheet. The pid rides the Qualtrics link (`?pid=${e://Field/PROLIFIC_PID}`). With `LOG_ENDPOINT` blank the page just `console.log`s, so it stays locally testable. Technical note: the POST body is `text/plain` (via `sendBeacon`, `fetch no-cors keepalive` fallback) because Apps Script cannot answer a CORS preflight.
+2. **US** — count only the link click, **inside Qualtrics** (embedded data set by the link question's JS — see `qualtrics-integration.md`), then send the respondent to their congressperson's webpage. The US letter/sign/clipboard flow from §4 was accordingly **removed**: the US path is now ZIP lookup → "Go to my representative's website" → new tab with the rep's official site (house.gov finder fallback while the 5 Calls key is pending).
+
+**Supersedes the §3 decisions** on measurement (was: aggregate counts only) and the US send mechanism (was: clipboard + webform). Privacy consequence, flagged for IRB/consent: researchers now receive *pseudonymous per-respondent* event data (Prolific ID + event + timestamp). The structural guarantee that the respondent's **name** (and postal/ZIP) never reaches researcher infrastructure is unchanged — the log payload contains only `{event, country, pid, ts}`, and the on-page privacy note now discloses the participant-ID logging.

@@ -60,7 +60,7 @@
 <body>
 <main>
   <h1>Write to your representative</h1>
-  <p class="subtitle">Add your name to a prepared letter about carbon pricing and send it directly to the person who represents you.</p>
+  <p class="subtitle" id="subtitle">Share your views on carbon pricing with the person who represents you.</p>
 
   <!-- STEP 1: country -->
   <section id="step-country" class="card">
@@ -109,7 +109,7 @@
 
     <div id="lookup-error" class="hidden">
       <p class="error" id="lookup-error-msg"></p>
-      <p>You can still continue &mdash; find your representative yourself, or send the letter with a general greeting:</p>
+      <p id="lookup-error-help">You can still continue &mdash; find your representative yourself, or send the letter with a general greeting:</p>
       <ul id="manual-links"></ul>
       <div id="manual-email-wrap" class="hidden" style="margin-bottom:0.75rem">
         <label for="manual-email">Your MP&rsquo;s email address (optional)</label>
@@ -125,7 +125,7 @@
     <div id="letter-preview" class="letter"></div>
     <label for="name-input">Your name</label>
     <input id="name-input" type="text" autocomplete="name" placeholder="Type your full name to sign">
-    <p class="privacy-note">&#128274; Your name is added to the letter only. It is <strong>never seen by or sent to the researchers</strong> &mdash; the letter goes directly from you to your representative.</p>
+    <p class="privacy-note">&#128274; Your name is added to the letter only. It is <strong>never seen by or sent to the researchers</strong> &mdash; the letter goes directly from you to your representative. The study records only that a letter was sent, linked to your participant ID &mdash; never your name or the letter itself.</p>
     <button id="btn-send" type="button" disabled>Sign &amp; send</button>
   </section>
 
@@ -141,18 +141,7 @@
       <p class="hint" id="copy-feedback-ca" aria-live="polite"></p>
     </div>
     <div id="done-us" class="hidden">
-      <p><strong>&#9989; Your signed letter has been copied</strong> to your clipboard.</p>
-      <ol class="steps">
-        <li>A new tab has opened with <span id="done-us-rep"></span>&rsquo;s official website. <span id="popup-blocked-note" class="hidden">If it didn&rsquo;t open, <a id="done-us-link" href="#" target="_blank" rel="noopener">click here</a>.</span></li>
-        <li>Find the <em>&ldquo;Contact&rdquo;</em> or <em>&ldquo;Email me&rdquo;</em> form (offices ask for your address to confirm you&rsquo;re a constituent).</li>
-        <li>Paste the letter into the message box and submit.</li>
-      </ol>
-      <div id="clipboard-fallback" class="hidden">
-        <p class="error">We couldn&rsquo;t access your clipboard &mdash; copy the letter below:</p>
-        <textarea class="fallback" id="fallback-textarea" readonly></textarea>
-        <button id="btn-select-copy" type="button" class="secondary">Select all &amp; copy</button>
-        <p class="hint" id="copy-feedback-us" aria-live="polite"></p>
-      </div>
+      <p><strong>&#9989; A new tab has opened</strong> with <span id="done-us-rep"></span>&rsquo;s official website, where you can share your views. <span id="popup-blocked-note" class="hidden">If it didn&rsquo;t open, <a id="done-us-link" href="#" target="_blank" rel="noopener">click here</a>.</span></p>
     </div>
     <p style="margin-top:1rem">Thank you. You can now close this tab.</p>
   </section>
@@ -161,12 +150,14 @@
 <script>
 /* ============================================================
    PROTOTYPE — letter-to-representative page.
-   Scale-up items (anonymous count logging, hosting, Qualtrics
-   link wiring, finalized letter text) are listed in README.md.
+   Canada: sign a pre-written letter → mailto: to their MP.
+   US: ZIP lookup → redirect to their House rep's official site
+       (per PI: link click is measured inside Qualtrics; no letter).
+   Remaining scale-up items are listed in README.md.
    ============================================================ */
 
-/* --- PI-editable letter templates.
-   NOTE: the Canadian subject+body (with a typical name substituted) must stay
+/* --- PI-editable letter template (Canada only — the US flow is a redirect).
+   NOTE: the subject+body (with a typical name substituted) must stay
    under ~1800 URL-encoded characters — mailto: links beyond ~2000 chars are
    truncated or dropped by some mail clients. --- */
 var LETTERS = {
@@ -178,15 +169,6 @@ var LETTERS = {
       "Climate change is already imposing real costs on our communities. I ask you to defend and strengthen carbon pricing, and to support returning its revenues transparently to Canadians.\r\n\r\n" +
       "Thank you for representing our community and for considering my views.\r\n\r\n" +
       "Sincerely,\r\n{{SIGNER_NAME}}"
-  },
-  us: {
-    subject: "Please support a price on carbon",
-    body: "{{SALUTATION}}\r\n\r\n" +
-      "As your constituent, I am writing to ask you to support putting a price on carbon pollution.\r\n\r\n" +
-      "A carbon fee with revenues returned to households is widely regarded by economists as one of the most effective and lowest-cost ways to cut emissions. It rewards clean energy innovation while protecting family budgets.\r\n\r\n" +
-      "Climate change is already imposing real costs on our communities. I ask you to support carbon pricing legislation that returns revenues directly to the American people.\r\n\r\n" +
-      "Thank you for representing our community and for considering my views.\r\n\r\n" +
-      "Sincerely,\r\n{{SIGNER_NAME}}"
   }
 };
 
@@ -194,6 +176,10 @@ var LETTERS = {
    https://5calls.org/representatives-api/ . Blank key => US lookup shows
    the manual-fallback panel, page remains usable. --- */
 var FIVE_CALLS_API_KEY = "";
+
+/* Google Apps Script web-app URL (see logger.gs + README). Blank => events
+   are only console.logged, so the page is fully testable without deploying. */
+var LOG_ENDPOINT = "";
 
 var MANUAL_LINKS = {
   ca: [
@@ -208,15 +194,39 @@ var MANUAL_LINKS = {
 
 var state = {
   country: null,      // "ca" | "us"
+  pid: "",            // Prolific ID from ?pid= (piped by Qualtrics)
   rep: null,          // chosen representative object (normalized)
   candidates: [],     // multi-district candidates
   manualEmail: null,  // CA manual fallback email
   generic: false      // true when proceeding without a lookup
 };
 
-/* Placeholder for the future anonymous aggregate counter
-   (POST {country, event} only — no name, no postal code, no respondent ID). */
-function logEvent(evt) { console.log("[logEvent stub]", state.country || "unknown", evt); }
+/* Event logging — the two PI measures go to the Sheet via LOG_ENDPOINT:
+   page_opened (arrival from the Qualtrics link) and send_clicked (Canada).
+   Payload is {event, country, pid, ts} ONLY — never the name or postal/ZIP.
+   text/plain body avoids a CORS preflight, which Apps Script can't answer. */
+var LOGGED_EVENTS = { page_opened: true, send_clicked: true };
+function logEvent(evt) {
+  var payload = {
+    event: evt,
+    country: state.country || "unknown",
+    pid: state.pid,
+    ts: new Date().toISOString()
+  };
+  console.log("[logEvent]", payload);
+  if (!LOG_ENDPOINT || !LOGGED_EVENTS[evt]) return;
+  var body = JSON.stringify(payload);
+  try {
+    if (navigator.sendBeacon &&
+        navigator.sendBeacon(LOG_ENDPOINT, new Blob([body], { type: "text/plain" }))) return;
+  } catch (e) { /* fall through to fetch */ }
+  try {
+    fetch(LOG_ENDPOINT, {
+      method: "POST", mode: "no-cors", keepalive: true,
+      headers: { "Content-Type": "text/plain" }, body: body
+    });
+  } catch (e) { /* logging must never break the page */ }
+}
 
 function $(id) { return document.getElementById(id); }
 function show(el) { el.classList.remove("hidden"); }
@@ -231,6 +241,9 @@ function showStep(id) {
 function setCountry(c) {
   state.country = c;
   state.rep = null; state.generic = false; state.manualEmail = null;
+  $("subtitle").textContent = c === "ca"
+    ? "Add your name to a prepared letter about carbon pricing and send it directly to your MP."
+    : "Find the person who represents you in Congress and visit their official website.";
   $("code-label").textContent = c === "ca" ? "Postal code" : "ZIP code";
   $("code-input").placeholder = c === "ca" ? "K1A 0A6" : "90210";
   $("code-input").value = "";
@@ -242,10 +255,14 @@ $("btn-ca").addEventListener("click", function () { setCountry("ca"); });
 $("btn-us").addEventListener("click", function () { setCountry("us"); });
 $("change-country").addEventListener("click", function () { showStep("step-country"); });
 
-/* Honors the future Qualtrics piped-text link:
-   ?country=${q://QID262/SelectedChoicesRecode} resolves to 1 (Canada) or 2 (USA). */
+/* Honors the Qualtrics piped-text link (see qualtrics-integration.md):
+   ?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}
+   country resolves to 1 (Canada) or 2 (USA). pid must be read BEFORE
+   setCountry so the page_opened event carries it. */
 (function initFromQuery() {
-  var q = (new URLSearchParams(location.search).get("country") || "").toLowerCase();
+  var params = new URLSearchParams(location.search);
+  state.pid = (params.get("pid") || params.get("PROLIFIC_PID") || "").trim();
+  var q = (params.get("country") || "").toLowerCase();
   if (q === "1" || q === "ca" || q === "canada") setCountry("ca");
   else if (q === "2" || q === "us" || q === "usa") setCountry("us");
 })();
@@ -267,7 +284,11 @@ function showLookupError(msg) {
     a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = l.label;
     li.appendChild(a); ul.appendChild(li);
   });
+  $("lookup-error-help").textContent = state.country === "ca"
+    ? "You can still continue — find your MP yourself, or send the letter with a general greeting:"
+    : "You can still reach your representative — use the official lookup below:";
   (state.country === "ca" ? show : hide)($("manual-email-wrap"));
+  (state.country === "ca" ? show : hide)($("btn-continue-generic"));
   show($("lookup-error"));
   logEvent("lookup_failed");
 }
@@ -291,6 +312,9 @@ function showRep(rep) {
   if (rep.photo) { $("rep-photo").src = rep.photo; $("rep-photo").style.visibility = "visible"; }
   else { $("rep-photo").removeAttribute("src"); $("rep-photo").style.visibility = "hidden"; }
   $("manual-lookup-link").href = MANUAL_LINKS[state.country][0].url;
+  $("btn-to-letter").textContent = state.country === "ca"
+    ? "Continue to the letter"
+    : "Go to my representative’s website";
   show($("rep-result"));
   logEvent("rep_found");
 }
@@ -398,24 +422,34 @@ $("btn-retry").addEventListener("click", function () {
 });
 
 $("btn-continue-generic").addEventListener("click", function () {
+  /* Canada-only (hidden for the US, whose fallback is the manual links). */
   state.generic = true;
-  state.manualEmail = state.country === "ca" ? $("manual-email").value.trim() : null;
+  state.manualEmail = $("manual-email").value.trim();
   state.rep = null;
   goToLetter();
 });
-$("btn-to-letter").addEventListener("click", goToLetter);
+$("btn-to-letter").addEventListener("click", function () {
+  if (state.country === "ca") { goToLetter(); return; }
+  /* US: redirect only — open the rep's official site in a new tab
+     (synchronously inside the click gesture, so popup blockers allow it). */
+  var targetUrl = state.rep ? state.rep.url : MANUAL_LINKS.us[0].url;
+  var win = null;
+  try { win = window.open(targetUrl, "_blank"); } catch (e) { win = null; }
+  $("done-us-rep").textContent = state.rep ? state.rep.name : "your representative";
+  $("done-us-link").href = targetUrl;
+  (win ? hide : show)($("popup-blocked-note"));
+  show($("done-us")); hide($("done-ca"));
+  showStep("step-done");
+});
 
-/* ---------- Step 3: sign ---------- */
+/* ---------- Step 3: sign (Canada only — the US flow ends at the redirect) ---------- */
 function salutation() {
-  if (state.generic || !state.rep) {
-    return state.country === "ca" ? "Dear Member of Parliament," : "Dear Representative,";
-  }
-  if (state.country === "ca") return "Dear " + state.rep.name + ", MP for " + state.rep.district + ",";
-  return "Dear " + (state.rep.office === "Senator" ? "Senator " : "Representative ") + state.rep.lastName + ",";
+  if (state.generic || !state.rep) return "Dear Member of Parliament,";
+  return "Dear " + state.rep.name + ", MP for " + state.rep.district + ",";
 }
 
 function buildLetter(name) {
-  return LETTERS[state.country].body
+  return LETTERS.ca.body
     .split("{{SALUTATION}}").join(salutation())
     .split("{{SIGNER_NAME}}").join(name || "[your name]");
 }
@@ -455,50 +489,24 @@ $("btn-send").addEventListener("click", function () {
   var letter = buildLetter(name);
   logEvent("send_clicked");
 
-  if (state.country === "ca") {
-    var email = state.rep ? state.rep.email : (state.manualEmail || "");
-    $("done-ca-rep").textContent = state.rep ? state.rep.name : "your MP";
-    show($("done-ca")); hide($("done-us"));
-    showStep("step-done");
-    $("btn-copy-email").onclick = function () {
-      copyText(email || "").then(function (ok) {
-        $("copy-feedback-ca").textContent = ok && email ? "Email address copied: " + email : (email || "No email address available — use the manual lookup links.");
-      });
-    };
-    $("btn-copy-letter-ca").onclick = function () {
-      copyText("Subject: " + LETTERS.ca.subject + "\r\n\r\n" + letter).then(function (ok) {
-        $("copy-feedback-ca").textContent = ok ? "Letter copied to clipboard." : "Copy failed — select the letter text manually.";
-      });
-    };
-    if (email) {
-      location.href = "mailto:" + encodeURIComponent(email) +
-        "?subject=" + encodeURIComponent(LETTERS.ca.subject) +
-        "&body=" + encodeURIComponent(letter);
-    }
-  } else {
-    /* Open the tab synchronously inside the click gesture (popup-blocker-safe),
-       then copy, then point the tab at the rep's official site. */
-    var targetUrl = state.rep ? state.rep.url : MANUAL_LINKS.us[0].url;
-    var win = null;
-    try { win = window.open("about:blank", "_blank"); } catch (e) { win = null; }
-    $("done-us-rep").textContent = state.rep ? state.rep.name : "your representative";
-    $("done-us-link").href = targetUrl;
-    copyText("Subject: " + LETTERS.us.subject + "\r\n\r\n" + letter).then(function (ok) {
-      if (!ok) {
-        $("fallback-textarea").value = letter;
-        show($("clipboard-fallback"));
-        $("btn-select-copy").onclick = function () {
-          $("fallback-textarea").select();
-          var did = false;
-          try { did = document.execCommand("copy"); } catch (e) { did = false; }
-          $("copy-feedback-us").textContent = did ? "Copied." : "Please copy the selected text with Ctrl/Cmd+C.";
-        };
-      } else { hide($("clipboard-fallback")); }
-      if (win) { win.location = targetUrl; hide($("popup-blocked-note")); }
-      else { show($("popup-blocked-note")); }
-      show($("done-us")); hide($("done-ca"));
-      showStep("step-done");
+  var email = state.rep ? state.rep.email : (state.manualEmail || "");
+  $("done-ca-rep").textContent = state.rep ? state.rep.name : "your MP";
+  show($("done-ca")); hide($("done-us"));
+  showStep("step-done");
+  $("btn-copy-email").onclick = function () {
+    copyText(email || "").then(function (ok) {
+      $("copy-feedback-ca").textContent = ok && email ? "Email address copied: " + email : (email || "No email address available — use the manual lookup links.");
     });
+  };
+  $("btn-copy-letter-ca").onclick = function () {
+    copyText("Subject: " + LETTERS.ca.subject + "\r\n\r\n" + letter).then(function (ok) {
+      $("copy-feedback-ca").textContent = ok ? "Letter copied to clipboard." : "Copy failed — select the letter text manually.";
+    });
+  };
+  if (email) {
+    location.href = "mailto:" + encodeURIComponent(email) +
+      "?subject=" + encodeURIComponent(LETTERS.ca.subject) +
+      "&body=" + encodeURIComponent(letter);
   }
 });
 </script>
