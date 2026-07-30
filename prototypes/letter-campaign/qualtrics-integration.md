@@ -17,14 +17,35 @@ Add an Embedded Data element declaring:
 
 Prolific must be configured to append `?PROLIFIC_PID={{%PROLIFIC_PID%}}` to the study URL (standard Prolific↔Qualtrics setup); Qualtrics auto-captures a URL parameter into an embedded-data field of the same name.
 
-## 2. The link question (Text/Graphic question)
+## 2. Hosting — lightweight and study-masking (decision 2026-07-30)
 
-**HTML view** — replace `<HOST>` with the deployed page URL (hosting decision pending):
+The page is hosted under a **neutral identity** so the URL respondents see reveals nothing about the study, the university, or this repository (avoids demand effects and lets the letter read as a genuine civic action, not a survey task).
+
+**Chosen approach: Cloudflare Pages "Direct Upload"** (free, no git connection, ~5 minutes):
+
+1. Create a Cloudflare account with a **non-identifying email/handle** (or use an existing personal one — the account name is not visible to visitors).
+2. Dashboard → *Workers & Pages* → *Create* → *Pages* → **Upload assets** (do *not* "connect to git" — a git-connected deploy would tie the public deployment to this identifiable repo).
+3. Project name: something neutral like `write-your-rep` → the live URL becomes **`https://write-your-rep.pages.dev`**.
+4. Drag in **only** `index.html` (after setting `LOG_ENDPOINT`). Don't upload the README/PROCESS/logger files — they name the study.
+5. Re-upload the same way for any update; the URL stays stable.
+
+(Netlify's "Drop" works identically — `https://<neutral-name>.netlify.app` — if Cloudflare is unavailable.)
+
+Masking checklist — what keeps the study unidentifiable from the respondent's side:
+
+- **URL**: `write-your-rep.pages.dev` — no researcher/university/project name. Do **not** use GitHub Pages on this repo (`nam-chu-2.github.io/icureus_carbon_calculator/...` leaks both the username and the project).
+- **Page content**: `index.html` never names the survey, university, or PI — it only says "the researchers"/"the study" in the privacy note (required disclosure, kept generic).
+- **Search engines**: `index.html` carries `<meta name="robots" content="noindex, nofollow">`, so the deployed page won't be indexed and can't be found by googling the letter text.
+- **Known residual risk**: this repo is public, and the page source (including the letter text) lives in it — someone who googles an exact letter sentence could find the *repo* via GitHub code search. If the PI wants that closed, either make this repo private or keep the final letter text only in the deployed copy (out of git). Flag for the PI/IRB.
+
+## 3. The link question (Text/Graphic question)
+
+**HTML view** — using the neutral host from §2 (adjust if the project name differs):
 
 ```html
 <p>We'd like to give you the chance to share your views with the person who represents you.</p>
 <p><a id="letter-link"
-      href="https://<HOST>/letter-campaign/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}"
+      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}"
       target="_blank" rel="noopener">
    Click here to contact your representative
 </a></p>
@@ -51,7 +72,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
 
 Embedded data is written when the respondent advances the page, so keep at least one more page (e.g. the Prolific completion redirect) after this question.
 
-## 3. Analysis quick reference
+## 4. Analysis quick reference
 
 | Measure | Where | Field/rows |
 |---|---|---|

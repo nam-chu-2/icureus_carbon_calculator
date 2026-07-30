@@ -54,8 +54,8 @@ Quick test matrix:
 ## Remaining before launch
 
 - **Deploy `logger.gs`** (5 min, instructions in the file) and set `LOG_ENDPOINT` in `index.html`.
-- **Hosting** — GitHub Pages. Note: enabling Pages on this repo publishes the *whole* repo; consider a separate public repo for just this page.
-- **Qualtrics wiring** — everything needed is in `qualtrics-integration.md`; blocked on the hosting URL.
+- **Hosting** — decided 2026-07-30: **Cloudflare Pages direct upload under a neutral name** (e.g. `write-your-rep.pages.dev`) so the URL doesn't reveal the study — full steps + masking checklist in `qualtrics-integration.md` §2. Not GitHub Pages on this repo (URL would leak the project name).
+- **Qualtrics wiring** — everything needed is in `qualtrics-integration.md`.
 - **5 Calls API key** (free) for automatic US rep lookup + confirming response field values against a live call. (Until then, US respondents get the house.gov finder link.)
 - **Letter text** — placeholder written by the engineer; PI finalizes. Keep subject+body under ~1800 URL-encoded characters (mailto ~2000-char limit).
 - Edge-case hardening (mobile mail handlers, French letter for Quebec ridings).
