@@ -120,8 +120,19 @@
     </div>
   </section>
 
-  <!-- STEP 3: sign -->
+  <!-- STEP 3: sign (Canada) — MP card and letter on one screen -->
   <section id="step-sign" class="card hidden">
+    <div id="sign-rep" class="rep-card" style="margin-bottom:0.35rem">
+      <img id="sign-rep-photo" alt="" onerror="this.style.visibility='hidden'">
+      <div class="who">
+        <strong id="sign-rep-name"></strong><br>
+        <span id="sign-rep-detail" class="hint"></span>
+      </div>
+    </div>
+    <p class="hint" id="sign-rep-tools" style="margin-bottom:0.9rem">
+      Not your MP? <a id="sign-manual-link" href="#" target="_blank" rel="noopener">Look up manually</a>
+      &middot; <button class="linkish" id="btn-change-code" type="button">use a different postal code</button>
+    </p>
     <p><strong>Your letter</strong> <span class="hint">(prepared for you &mdash; just add your name)</span></p>
     <div id="letter-preview" class="letter"></div>
     <label for="name-input">Your name</label>
@@ -309,19 +320,15 @@ function normalizeCaRep(o) {
 function showRep(rep) {
   state.rep = rep;
   hide($("rep-chooser")); hide($("lookup-error")); hide($("lookup-status"));
-  $("rep-name").textContent = rep.office === "MP"
-    ? "Your MP: " + rep.name
-    : "Your Representative: " + rep.name;
-  $("rep-detail").textContent = (rep.party ? rep.party + ", " : "") +
-    (rep.office === "MP" ? "riding of " + rep.district : rep.district);
+  logEvent("rep_found");
+  if (state.country === "ca") { goToLetter(); return; } // MP card renders on the letter screen
+  $("rep-name").textContent = "Your Representative: " + rep.name;
+  $("rep-detail").textContent = (rep.party ? rep.party + ", " : "") + rep.district;
   if (rep.photo) { $("rep-photo").src = rep.photo; $("rep-photo").style.visibility = "visible"; }
   else { $("rep-photo").removeAttribute("src"); $("rep-photo").style.visibility = "hidden"; }
-  $("manual-lookup-link").href = MANUAL_LINKS[state.country][0].url;
-  $("btn-to-letter").textContent = state.country === "ca"
-    ? "Continue to the letter"
-    : "Go to my representative’s website";
+  $("manual-lookup-link").href = MANUAL_LINKS.us[0].url;
+  $("btn-to-letter").textContent = "Go to my representative’s website";
   show($("rep-result"));
-  logEvent("rep_found");
 }
 
 function showChooser(candidates) {
@@ -475,10 +482,28 @@ function buildLetter(name) {
 function renderLetter() { $("letter-preview").textContent = buildLetter($("name-input").value.trim()); }
 
 function goToLetter() {
+  var rep = state.rep;
+  if (rep) {
+    $("sign-rep-name").textContent = "Your MP: " + rep.name;
+    $("sign-rep-detail").textContent = (rep.party ? rep.party + ", " : "") + "riding of " + rep.district;
+    if (rep.photo) { $("sign-rep-photo").src = rep.photo; $("sign-rep-photo").style.visibility = "visible"; }
+    else { $("sign-rep-photo").removeAttribute("src"); $("sign-rep-photo").style.visibility = "hidden"; }
+    $("sign-manual-link").href = MANUAL_LINKS.ca[0].url;
+    show($("sign-rep")); show($("sign-rep-tools"));
+  } else {
+    hide($("sign-rep")); hide($("sign-rep-tools"));
+  }
   renderLetter();
   $("btn-send").disabled = !$("name-input").value.trim();
   showStep("step-sign");
 }
+$("btn-change-code").addEventListener("click", function () {
+  state.rep = null; state.generic = false;
+  hide($("rep-result")); hide($("lookup-error")); hide($("lookup-status"));
+  $("code-input").value = "";
+  showStep("step-lookup");
+  $("code-input").focus();
+});
 $("name-input").addEventListener("input", function () {
   renderLetter();
   $("btn-send").disabled = !this.value.trim();
