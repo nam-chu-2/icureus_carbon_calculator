@@ -7,3 +7,6 @@ api-test/library_id.txt
 
 # OS noise
 .DS_Store
+
+# Claude Code session data (worktrees, local settings)
+.claude/
