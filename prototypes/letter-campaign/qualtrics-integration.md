@@ -14,8 +14,8 @@ Add an Embedded Data element declaring:
 | `PROLIFIC_PID` | *(leave blank — set from the URL)* |
 | `letter_link_clicked` | `0` |
 | `letter_link_clicked_ts` | *(blank)* |
-| `fsa` | *(Canadians: first 3 characters of the postal code — set from wherever the survey captures it; rename the pipe below if your field is called something else)* |
-| `zip3` | *(Americans: first 3 digits of the ZIP — already collected as embedded data; rename the pipe below to the actual field name)* |
+
+No embedded-data fields are needed for location: the FSA/ZIP3 is piped **directly from the postal-code/ZIP question** into the link (see §3).
 
 Prolific must be configured to append `?PROLIFIC_PID={{%PROLIFIC_PID%}}` to the study URL (standard Prolific↔Qualtrics setup); Qualtrics auto-captures a URL parameter into an embedded-data field of the same name.
 
@@ -47,15 +47,17 @@ Masking checklist — what keeps the study unidentifiable from the respondent's 
 ```html
 <p>We'd like to give you the chance to share your views with the person who represents you.</p>
 <p><a id="letter-link"
-      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}&zip3=${e://Field/zip3}"
+      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${q://QID5/ChoiceGroup/SelectedChoices}&zip3=${q://QID5/ChoiceGroup/SelectedChoices}"
       target="_blank" rel="noopener">
    Click here to contact your representative
 </a></p>
 ```
 
-The `fsa` parameter makes the page **auto-run the MP lookup**, so Canadian respondents land directly on "Your MP: …" with the letter ready — no typing. Likewise `zip3` auto-runs the **US** lookup: single-district ZIP3s land straight on the rep card with the "Go to my representative's website" button; multi-district ZIP3s get a quick "pick yours" chooser. If either field is empty or the lookup fails, the page falls back to the normal manual-entry step, so both pipes are safe to include unconditionally.
+`QID5` here is the **postal-code/ZIP question** (the dropdown of valid FSAs and ZIP3s on an earlier page — swap in the real survey's QID). The *same* selected value is deliberately piped into both parameters: the page reads `fsa` for Canadians and `zip3` for Americans and ignores the other, so no country logic is needed in the link. Pipe the choice **text** (`ChoiceGroup/SelectedChoices`), not the recode — the recode would give the internal choice number (e.g. `1000`), not `M5V`.
 
-If the FSA comes from a **question** instead of embedded data (e.g. a dropdown of valid FSAs on an earlier page, as in the test survey), pipe the choice *text*, not the recode: `&fsa=${q://QID5/ChoiceGroup/SelectedChoices}` (the recode would give the internal choice number, not `M5V`).
+With the pipes in place the page **auto-runs the lookup on arrival**: Canadians land directly on "Your MP: …" with the letter ready to sign; Americans with a single-district ZIP3 land on the rep card with the "Go to my representative's website" button, and multi-district ZIP3s get a quick "pick yours" chooser first. If the pipe is empty or the lookup fails, the page falls back to its manual-entry step, so the pipes are safe to include unconditionally.
+
+The postal/ZIP question must sit on an **earlier page** than the link question (page break between them), or the pipe resolves empty.
 
 `${q://QID262/SelectedChoicesRecode}` is the country question (q24): recode **1 = Canada, 2 = USA** — the page maps these in `initFromQuery()`. Piped text resolves per-respondent at render time.
 
