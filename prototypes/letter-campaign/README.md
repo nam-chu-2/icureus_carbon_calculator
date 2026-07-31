@@ -25,7 +25,7 @@ The Prolific ID reaches the page via the Qualtrics link (`?pid=${e://Field/PROLI
 
 ## Representative lookup (client-side)
 
-- **Canada** — postal code → `GET https://represent.opennorth.ca/postcodes/{CODE}/` (Represent API by Open North; free, no auth, CORS-enabled). Returns the MP's name, party, riding and real `@parl.gc.ca` email. Verified live 2026-07-28 (e.g. `M5V 3L9` → Chi Nguyen, Spadina–Harbourfront). Multi-riding postal codes (e.g. `K1A 0A6`) trigger a chooser.
+- **Canada** — respondent types only their **FSA** (first 3 characters of the postal code, e.g. `M5V` — less identifying than a full code, parallel to the US ZIP3). Chain: `GET https://www.geolocator.api.geo.ca/geolocation/en/locate?q={FSA}` (NRCan geolocator; free, no auth, CORS-enabled) → centroid → `GET https://represent.opennorth.ca/representatives/house-of-commons/?point={lat},{lon}` (Represent API) → MP name, party, riding and real `@parl.gc.ca` email. Verified live 2026-07-30 (`M5V` → Chi Nguyen, Spadina–Harbourfront). **Limitation:** an FSA can straddle riding boundaries and the centroid picks one — the "Not your district?" manual link and generic-letter path cover boundary cases.
 - **US** — ZIP → `GET https://api.5calls.org/v1/representatives?location={ZIP}` with an `X-5Calls-Token` header (free key: https://5calls.org/representatives-api/). **Key not yet requested** — with a blank key the page shows the manual-fallback panel (house.gov finder), so the US path degrades gracefully.
 
 **Send mechanics.** Canada: `mailto:` with the MP's address and the signed letter pre-filled → the respondent's *own* mail client sends it (name exists only in the browser and their own outgoing email). US: one click opens the rep's official website in a new tab — members of Congress have no public email addresses, so the site (with its contact form) is the official channel.
@@ -44,10 +44,9 @@ Quick test matrix:
 
 | Case | Input | Expect |
 |---|---|---|
-| CA happy path | `M5V 3L9` | MP card; Sign & send opens mail client; console shows `page_opened` + `send_clicked` with the pid |
-| CA multi-riding | `K1A 0A6` | Radio chooser |
-| CA invalid | `12345` | Inline validation message |
-| CA unknown | `Z9Z9Z9` | Error panel with manual links + generic-letter path |
+| CA happy path | `M5V` (full codes also accepted — extra chars ignored) | MP card; Sign & send opens mail client; console shows `page_opened` + `send_clicked` with the pid |
+| CA invalid | `123` | Inline validation message |
+| CA unknown | `Z9Z` | Error panel with manual links + generic-letter path |
 | US, no key | any ZIP | Fallback panel with house.gov link; **no** letter/sign step anywhere in the US flow |
 | Privacy proof | DevTools → Network | Only opennorth.ca / 5calls.org (+ `LOG_ENDPOINT` if set) requests; the typed name appears in **no** network request |
 
@@ -66,5 +65,5 @@ Quick test matrix:
 | Party | Sees |
 |---|---|
 | Researchers | Prolific ID + event type (`page_opened` / `send_clicked`) + timestamp — never the name, postal/ZIP, or letter |
-| Represent / 5 Calls APIs | Postal/ZIP + IP (never the name, never the pid) |
+| NRCan geolocator / Represent / 5 Calls APIs | FSA (3 chars) or ZIP + IP (never the name, never the pid) |
 | The politician's office | CA only: the letter with the respondent's name, from the respondent's own email — identifiable to the office by design; disclosed on-page |
