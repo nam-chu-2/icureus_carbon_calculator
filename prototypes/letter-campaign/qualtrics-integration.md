@@ -15,6 +15,7 @@ Add an Embedded Data element declaring:
 | `letter_link_clicked` | `0` |
 | `letter_link_clicked_ts` | *(blank)* |
 | `fsa` | *(Canadians: first 3 characters of the postal code — set from wherever the survey captures it; rename the pipe below if your field is called something else)* |
+| `zip3` | *(Americans: first 3 digits of the ZIP — already collected as embedded data; rename the pipe below to the actual field name)* |
 
 Prolific must be configured to append `?PROLIFIC_PID={{%PROLIFIC_PID%}}` to the study URL (standard Prolific↔Qualtrics setup); Qualtrics auto-captures a URL parameter into an embedded-data field of the same name.
 
@@ -27,7 +28,7 @@ The page is hosted under a **neutral identity** so the URL respondents see revea
 1. Create a Cloudflare account with a **non-identifying email/handle** (or use an existing personal one — the account name is not visible to visitors).
 2. Dashboard → *Workers & Pages* → *Create* → *Pages* → **Upload assets** (do *not* "connect to git" — a git-connected deploy would tie the public deployment to this identifiable repo).
 3. Project name: something neutral like `write-your-rep` → the live URL becomes **`https://write-your-rep.pages.dev`**.
-4. Drag in **only** `index.html` (after setting `LOG_ENDPOINT`). Don't upload the README/PROCESS/logger files — they name the study.
+4. Drag in **only** `index.html` and `zip3-contacts.js` (after setting `LOG_ENDPOINT`). Don't upload the README/PROCESS/logger files — they name the study.
 5. Re-upload the same way for any update; the URL stays stable.
 
 (Netlify's "Drop" works identically — `https://<neutral-name>.netlify.app` — if Cloudflare is unavailable.)
@@ -46,13 +47,13 @@ Masking checklist — what keeps the study unidentifiable from the respondent's 
 ```html
 <p>We'd like to give you the chance to share your views with the person who represents you.</p>
 <p><a id="letter-link"
-      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}"
+      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}&zip3=${e://Field/zip3}"
       target="_blank" rel="noopener">
    Click here to contact your representative
 </a></p>
 ```
 
-The `fsa` parameter makes the page **auto-run the MP lookup**, so Canadian respondents land directly on "Your MP: …" with the letter ready — no typing. If the field is empty (e.g. US respondents) or the lookup fails, the page falls back to the normal manual-entry step, so the pipe is safe to include unconditionally.
+The `fsa` parameter makes the page **auto-run the MP lookup**, so Canadian respondents land directly on "Your MP: …" with the letter ready — no typing. Likewise `zip3` auto-runs the **US** lookup: single-district ZIP3s land straight on the rep card with the "Go to my representative's website" button; multi-district ZIP3s get a quick "pick yours" chooser. If either field is empty or the lookup fails, the page falls back to the normal manual-entry step, so both pipes are safe to include unconditionally.
 
 If the FSA comes from a **question** instead of embedded data (e.g. a dropdown of valid FSAs on an earlier page, as in the test survey), pipe the choice *text*, not the recode: `&fsa=${q://QID5/ChoiceGroup/SelectedChoices}` (the recode would give the internal choice number, not `M5V`).
 
