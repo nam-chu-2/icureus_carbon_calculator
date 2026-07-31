@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>Write to Your Representative</title>
 <style>
   :root { --accent: #1a6b4a; --accent-dark: #125137; --err: #a33; --muted: #666; }
@@ -76,8 +77,8 @@
     <button class="linkish" id="change-country" type="button">&larr; change country</button>
     <div class="row" style="margin-top:0.6rem">
       <div>
-        <label id="code-label" for="code-input">Postal code</label>
-        <input id="code-input" type="text" autocomplete="postal-code" placeholder="K1A 0A6">
+        <label id="code-label" for="code-input">First 3 characters of your postal code</label>
+        <input id="code-input" type="text" autocomplete="off" placeholder="M5V">
       </div>
       <div style="flex:0 0 auto">
         <button id="btn-lookup" type="button">Find my representative</button>
@@ -244,8 +245,8 @@ function setCountry(c) {
   $("subtitle").textContent = c === "ca"
     ? "Add your name to a prepared letter about carbon pricing and send it directly to your MP."
     : "Find the person who represents you in Congress and visit their official website.";
-  $("code-label").textContent = c === "ca" ? "Postal code" : "ZIP code";
-  $("code-input").placeholder = c === "ca" ? "K1A 0A6" : "90210";
+  $("code-label").textContent = c === "ca" ? "First 3 characters of your postal code" : "ZIP code";
+  $("code-input").placeholder = c === "ca" ? "M5V" : "90210";
   $("code-input").value = "";
   hide($("rep-result")); hide($("lookup-error")); hide($("rep-chooser")); hide($("lookup-status"));
   showStep("step-lookup");
@@ -256,12 +257,16 @@ $("btn-us").addEventListener("click", function () { setCountry("us"); });
 $("change-country").addEventListener("click", function () { showStep("step-country"); });
 
 /* Honors the Qualtrics piped-text link (see qualtrics-integration.md):
-   ?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}
+   ?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}
    country resolves to 1 (Canada) or 2 (USA). pid must be read BEFORE
-   setCountry so the page_opened event carries it. */
+   setCountry so the page_opened event carries it. A piped fsa auto-runs
+   the MP lookup (triggered at the end of this script, after the lookup
+   button's handler is attached); on failure the manual entry remains. */
+var PENDING_FSA = "";
 (function initFromQuery() {
   var params = new URLSearchParams(location.search);
   state.pid = (params.get("pid") || params.get("PROLIFIC_PID") || "").trim();
+  PENDING_FSA = (params.get("fsa") || "").trim();
   var q = (params.get("country") || "").toLowerCase();
   if (q === "1" || q === "ca" || q === "canada") setCountry("ca");
   else if (q === "2" || q === "us" || q === "usa") setCountry("us");
@@ -346,21 +351,33 @@ function fetchWithTimeout(url, opts) {
   return fetch(url, opts).finally(function () { clearTimeout(t); });
 }
 
-function lookupCanada(code) {
-  /* Represent API by Open North — free, no auth, CORS-enabled.
-     representatives_concordance (exact postal-code match) is preferred over
-     representatives_centroid (district containing the code's centre point). */
-  return fetchWithTimeout("https://represent.opennorth.ca/postcodes/" + encodeURIComponent(code) + "/")
+function lookupCanada(fsa) {
+  /* FSA (first 3 characters of the postal code) → centroid via the NRCan
+     geolocator (free, no auth, CORS-enabled) → MP via the Represent API's
+     point lookup. NOTE: an FSA can straddle riding boundaries and the
+     centroid picks one riding — the "Not your district?" manual link and
+     the generic-letter path cover respondents near a boundary. */
+  return fetchWithTimeout("https://www.geolocator.api.geo.ca/geolocation/en/locate?q=" + encodeURIComponent(fsa))
     .then(function (r) {
-      if (r.status === 404) throw new Error("That postal code was not found.");
+      if (!r.ok) throw new Error("The location service returned an error (" + r.status + ").");
+      return r.json();
+    })
+    .then(function (results) {
+      var hit = null;
+      for (var i = 0; i < (results || []).length; i++) {
+        if (results[i].type && results[i].type.indexOf("PostalCode") >= 0 && results[i].geometry) { hit = results[i]; break; }
+      }
+      if (!hit) throw new Error("That postal code prefix was not found.");
+      var lon = hit.geometry.coordinates[0], lat = hit.geometry.coordinates[1];
+      return fetchWithTimeout("https://represent.opennorth.ca/representatives/house-of-commons/?point=" + lat + "," + lon);
+    })
+    .then(function (r) {
       if (!r.ok) throw new Error("The representative lookup service returned an error (" + r.status + ").");
       return r.json();
     })
     .then(function (d) {
-      var pool = (d.representatives_concordance && d.representatives_concordance.length
-        ? d.representatives_concordance : d.representatives_centroid) || [];
-      var mps = pool.filter(function (o) { return o.elected_office === "MP"; }).map(normalizeCaRep);
-      if (!mps.length) throw new Error("We couldn't find an MP for that postal code.");
+      var mps = (d.objects || []).map(normalizeCaRep);
+      if (!mps.length) throw new Error("We couldn't find an MP for that postal code prefix.");
       if (mps.length > 1) showChooser(mps); else showRep(mps[0]);
     });
 }
@@ -397,8 +414,9 @@ $("btn-lookup").addEventListener("click", function () {
   hide($("rep-result")); hide($("lookup-error")); hide($("rep-chooser"));
   var task;
   if (state.country === "ca") {
-    var code = raw.replace(/\s+/g, "");
-    if (!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(code)) { setStatus("Please enter a valid postal code, e.g. K1A 0A6.", true); return; }
+    /* Accept a full postal code too \u2014 only the FSA (first 3 chars) is used. */
+    var code = raw.replace(/\s+/g, "").slice(0, 3);
+    if (!/^[A-Z]\d[A-Z]$/.test(code)) { setStatus("Please enter the first 3 characters of your postal code, e.g. M5V.", true); return; }
     setStatus("Looking up your MP\u2026");
     task = lookupCanada(code);
   } else {
@@ -509,6 +527,14 @@ $("btn-send").addEventListener("click", function () {
       "&body=" + encodeURIComponent(letter);
   }
 });
+
+/* Auto-run the lookup when Qualtrics piped an FSA into the link (the
+   respondent skips straight to their MP). Runs last so the lookup
+   button's click handler is already attached. */
+if (state.country === "ca" && PENDING_FSA) {
+  $("code-input").value = PENDING_FSA;
+  $("btn-lookup").click();
+}
 </script>
 </body>
 </html>
