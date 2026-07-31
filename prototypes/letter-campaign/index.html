@@ -159,12 +159,14 @@
   </section>
 </main>
 
+<script src="zip3-contacts.js"></script>
 <script>
 /* ============================================================
    PROTOTYPE — letter-to-representative page.
    Canada: sign a pre-written letter → mailto: to their MP.
-   US: ZIP lookup → redirect to their House rep's official site
-       (per PI: link click is measured inside Qualtrics; no letter).
+   US: ZIP3 → House rep's contact page via the bundled table
+       (zip3-contacts.js; per PI: link click is measured inside
+       Qualtrics; no letter).
    Remaining scale-up items are listed in README.md.
    ============================================================ */
 
@@ -183,11 +185,6 @@ var LETTERS = {
       "Sincerely,\r\n{{SIGNER_NAME}}"
   }
 };
-
-/* --- Config (split into config.js at scale-up). 5 Calls key is free:
-   https://5calls.org/representatives-api/ . Blank key => US lookup shows
-   the manual-fallback panel, page remains usable. --- */
-var FIVE_CALLS_API_KEY = "";
 
 /* Google Apps Script web-app URL (see logger.gs + README). Blank => events
    are only console.logged, so the page is fully testable without deploying. */
@@ -256,8 +253,8 @@ function setCountry(c) {
   $("subtitle").textContent = c === "ca"
     ? "Add your name to a prepared letter about carbon pricing and send it directly to your MP."
     : "Find the person who represents you in Congress and visit their official website.";
-  $("code-label").textContent = c === "ca" ? "First 3 characters of your postal code" : "ZIP code";
-  $("code-input").placeholder = c === "ca" ? "M5V" : "90210";
+  $("code-label").textContent = c === "ca" ? "First 3 characters of your postal code" : "ZIP code (first 3 digits are enough)";
+  $("code-input").placeholder = c === "ca" ? "M5V" : "902";
   $("code-input").value = "";
   hide($("rep-result")); hide($("lookup-error")); hide($("rep-chooser")); hide($("lookup-status"));
   showStep("step-lookup");
@@ -273,11 +270,12 @@ $("change-country").addEventListener("click", function () { showStep("step-count
    setCountry so the page_opened event carries it. A piped fsa auto-runs
    the MP lookup (triggered at the end of this script, after the lookup
    button's handler is attached); on failure the manual entry remains. */
-var PENDING_FSA = "";
+var PENDING_FSA = "", PENDING_ZIP3 = "";
 (function initFromQuery() {
   var params = new URLSearchParams(location.search);
   state.pid = (params.get("pid") || params.get("PROLIFIC_PID") || "").trim();
   PENDING_FSA = (params.get("fsa") || "").trim();
+  PENDING_ZIP3 = (params.get("zip3") || "").trim();
   var q = (params.get("country") || "").toLowerCase();
   if (q === "1" || q === "ca" || q === "canada") setCountry("ca");
   else if (q === "2" || q === "us" || q === "usa") setCountry("us");
@@ -389,31 +387,25 @@ function lookupCanada(fsa) {
     });
 }
 
-function lookupUS(zip) {
-  /* 5 Calls representatives API — free key required (X-5Calls-Token). */
-  if (!FIVE_CALLS_API_KEY) {
-    showLookupError("Automatic lookup isn't configured yet for the United States.");
+function lookupUS(zipDigits) {
+  /* ZIP3 → House rep contact page via the bundled table (zip3-contacts.js,
+     generated from the team-maintained spreadsheet by make_zip3_contacts.py).
+     No API, no key — the ZIP never leaves the browser. A ZIP3 can span
+     districts, so multiple reps trigger the chooser. */
+  var zip3 = zipDigits.slice(0, 3);
+  var entry = (typeof ZIP3_CONTACTS !== "undefined") ? ZIP3_CONTACTS[zip3] : null;
+  if (!entry || !entry.r || !entry.r.length) {
+    showLookupError("We couldn't find a representative for that ZIP code.");
     return Promise.resolve();
   }
-  return fetchWithTimeout("https://api.5calls.org/v1/representatives?location=" + encodeURIComponent(zip),
-    { headers: { "X-5Calls-Token": FIVE_CALLS_API_KEY } })
-    .then(function (r) {
-      if (!r.ok) throw new Error("The representative lookup service returned an error (" + r.status + ").");
-      return r.json();
-    })
-    .then(function (d) {
-      var reps = (d.representatives || []).map(function (o) {
-        return {
-          name: o.name, lastName: o.name.split(" ").pop(), party: o.party,
-          district: o.area === "US House" ? "House district " + (d.state || "") + "-" + (d.district || "") : (d.state || "") + " (Senate)",
-          email: "", url: o.url, photo: o.photoURL,
-          office: o.area === "US House" ? "Representative" : "Senator"
-        };
-      });
-      var house = reps.filter(function (r2) { return r2.office === "Representative"; });
-      if (!house.length) throw new Error("We couldn't find a House representative for that ZIP code.");
-      if (house.length > 1 || d.lowAccuracy) showChooser(house); else showRep(house[0]);
-    });
+  var reps = entry.r.map(function (o) {
+    return {
+      name: o.n, lastName: o.n.split(" ").pop(), party: o.p,
+      district: entry.s, email: "", url: o.u, photo: "", office: "Representative"
+    };
+  });
+  if (reps.length > 1) showChooser(reps); else showRep(reps[0]);
+  return Promise.resolve();
 }
 
 $("btn-lookup").addEventListener("click", function () {
@@ -427,8 +419,9 @@ $("btn-lookup").addEventListener("click", function () {
     setStatus("Looking up your MP\u2026");
     task = lookupCanada(code);
   } else {
-    var m = raw.match(/^(\d{5})(-?\d{4})?$/);
-    if (!m) { setStatus("Please enter a valid 5-digit ZIP code.", true); return; }
+    /* The first 3 digits (ZIP3) are enough \u2014 full ZIPs also accepted. */
+    var m = raw.replace(/\s+/g, "").match(/^(\d{3})(\d{2}(-?\d{4})?)?$/);
+    if (!m) { setStatus("Please enter your ZIP code \u2014 the first 3 digits are enough.", true); return; }
     setStatus("Looking up your representative\u2026");
     task = lookupUS(m[1]);
   }
@@ -553,11 +546,14 @@ $("btn-send").addEventListener("click", function () {
   }
 });
 
-/* Auto-run the lookup when Qualtrics piped an FSA into the link (the
-   respondent skips straight to their MP). Runs last so the lookup
-   button's click handler is already attached. */
+/* Auto-run the lookup when Qualtrics piped an FSA/ZIP3 into the link (the
+   respondent skips straight to their representative). Runs last so the
+   lookup button's click handler is already attached. */
 if (state.country === "ca" && PENDING_FSA) {
   $("code-input").value = PENDING_FSA;
+  $("btn-lookup").click();
+} else if (state.country === "us" && PENDING_ZIP3) {
+  $("code-input").value = PENDING_ZIP3;
   $("btn-lookup").click();
 }
 </script>
