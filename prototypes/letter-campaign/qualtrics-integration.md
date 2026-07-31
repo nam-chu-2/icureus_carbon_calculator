@@ -54,26 +54,42 @@ Masking checklist — what keeps the study unidentifiable from the respondent's 
 
 The `fsa` parameter makes the page **auto-run the MP lookup**, so Canadian respondents land directly on "Your MP: …" with the letter ready — no typing. If the field is empty (e.g. US respondents) or the lookup fails, the page falls back to the normal manual-entry step, so the pipe is safe to include unconditionally.
 
+If the FSA comes from a **question** instead of embedded data (e.g. a dropdown of valid FSAs on an earlier page, as in the test survey), pipe the choice *text*, not the recode: `&fsa=${q://QID5/ChoiceGroup/SelectedChoices}` (the recode would give the internal choice number, not `M5V`).
+
 `${q://QID262/SelectedChoicesRecode}` is the country question (q24): recode **1 = Canada, 2 = USA** — the page maps these in `initFromQuery()`. Piped text resolves per-respondent at render time.
 
 > ⚠️ Inserting questions renumbers/reshuffles q-references (this bit the survey before): if the survey is edited, re-verify that QID262 is still the country question before launch.
 
-**JavaScript** (question's "Add JavaScript"):
+**JavaScript** (question's "Add JavaScript") — records the click, greys the link out, ignores repeat clicks, and auto-advances the survey while the letter tab opens:
 
 ```js
 Qualtrics.SurveyEngine.addOnReady(function () {
+  var that = this;
   var link = this.getQuestionContainer().querySelector("#letter-link");
   if (!link) return;
-  link.addEventListener("click", function () {
+  link.addEventListener("click", function (e) {
+    if (link.dataset.clicked) { e.preventDefault(); return; } // swallow repeat clicks
+    link.dataset.clicked = "1";
     Qualtrics.SurveyEngine.setEmbeddedData("letter_link_clicked", "1");
     Qualtrics.SurveyEngine.setEmbeddedData("letter_link_clicked_ts", new Date().toISOString());
+    link.style.pointerEvents = "none";
+    link.style.opacity = "0.6";
+    setTimeout(function () { that.clickNextButton(); }, 800); // survey advances on its own
   });
 });
 ```
 
+Respondents who choose **not** to click still advance with the normal Next button — that's the declined group, so don't force-advance them.
+
 `letter_link_clicked` / `letter_link_clicked_ts` then export with the response row, which already contains `PROLIFIC_PID` — so the US link-click measure (and the CA cross-check) is pid-linked with no extra infrastructure.
 
 Embedded data is written when the respondent advances the page, so keep at least one more page (e.g. the Prolific completion redirect) after this question.
+
+**Lock out re-clicks / resubmission** (Survey Options):
+
+- **General → Back button: off** (the default) — combined with the auto-advance, the link page can't be revisited.
+- **Security → Prevent multiple submissions: on** — the same person can't retake the survey for a second click.
+- A respondent *reloading the letter tab* still fires an extra `page_opened` in the Sheet — that's why the analysis (§4) dedupes `page_opened` by pid.
 
 ## 4. Analysis quick reference
 
