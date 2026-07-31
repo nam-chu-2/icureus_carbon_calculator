@@ -257,12 +257,16 @@ $("btn-us").addEventListener("click", function () { setCountry("us"); });
 $("change-country").addEventListener("click", function () { showStep("step-country"); });
 
 /* Honors the Qualtrics piped-text link (see qualtrics-integration.md):
-   ?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}
+   ?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}
    country resolves to 1 (Canada) or 2 (USA). pid must be read BEFORE
-   setCountry so the page_opened event carries it. */
+   setCountry so the page_opened event carries it. A piped fsa auto-runs
+   the MP lookup (triggered at the end of this script, after the lookup
+   button's handler is attached); on failure the manual entry remains. */
+var PENDING_FSA = "";
 (function initFromQuery() {
   var params = new URLSearchParams(location.search);
   state.pid = (params.get("pid") || params.get("PROLIFIC_PID") || "").trim();
+  PENDING_FSA = (params.get("fsa") || "").trim();
   var q = (params.get("country") || "").toLowerCase();
   if (q === "1" || q === "ca" || q === "canada") setCountry("ca");
   else if (q === "2" || q === "us" || q === "usa") setCountry("us");
@@ -523,6 +527,14 @@ $("btn-send").addEventListener("click", function () {
       "&body=" + encodeURIComponent(letter);
   }
 });
+
+/* Auto-run the lookup when Qualtrics piped an FSA into the link (the
+   respondent skips straight to their MP). Runs last so the lookup
+   button's click handler is already attached. */
+if (state.country === "ca" && PENDING_FSA) {
+  $("code-input").value = PENDING_FSA;
+  $("btn-lookup").click();
+}
 </script>
 </body>
 </html>

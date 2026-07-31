@@ -38,7 +38,7 @@ python -m http.server 8000
 # open http://localhost:8000/?country=1&pid=TEST123
 ```
 
-Country prefill mirrors the Qualtrics link: `?country=1` / `ca` → Canada, `?country=2` / `us` → US; `pid` is the Prolific ID.
+Country prefill mirrors the Qualtrics link: `?country=1` / `ca` → Canada, `?country=2` / `us` → US; `pid` is the Prolific ID; `fsa` (e.g. `&fsa=M5V`) auto-runs the Canadian MP lookup so the respondent skips straight to their MP (falls back to manual entry if missing or failing).
 
 Quick test matrix:
 

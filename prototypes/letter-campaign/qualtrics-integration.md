@@ -14,6 +14,7 @@ Add an Embedded Data element declaring:
 | `PROLIFIC_PID` | *(leave blank — set from the URL)* |
 | `letter_link_clicked` | `0` |
 | `letter_link_clicked_ts` | *(blank)* |
+| `fsa` | *(Canadians: first 3 characters of the postal code — set from wherever the survey captures it; rename the pipe below if your field is called something else)* |
 
 Prolific must be configured to append `?PROLIFIC_PID={{%PROLIFIC_PID%}}` to the study URL (standard Prolific↔Qualtrics setup); Qualtrics auto-captures a URL parameter into an embedded-data field of the same name.
 
@@ -45,11 +46,13 @@ Masking checklist — what keeps the study unidentifiable from the respondent's 
 ```html
 <p>We'd like to give you the chance to share your views with the person who represents you.</p>
 <p><a id="letter-link"
-      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}"
+      href="https://write-your-rep.pages.dev/?country=${q://QID262/SelectedChoicesRecode}&pid=${e://Field/PROLIFIC_PID}&fsa=${e://Field/fsa}"
       target="_blank" rel="noopener">
    Click here to contact your representative
 </a></p>
 ```
+
+The `fsa` parameter makes the page **auto-run the MP lookup**, so Canadian respondents land directly on "Your MP: …" with the letter ready — no typing. If the field is empty (e.g. US respondents) or the lookup fails, the page falls back to the normal manual-entry step, so the pipe is safe to include unconditionally.
 
 `${q://QID262/SelectedChoicesRecode}` is the country question (q24): recode **1 = Canada, 2 = USA** — the page maps these in `initFromQuery()`. Piped text resolves per-respondent at render time.
 
